@@ -24,6 +24,7 @@ projects/
 ```
 
 **Directory naming:** `YYYY-NNN-lotXX-description`
+
 - `YYYY` — year the project was opened
 - `NNN` — zero-padded sequential ID within the year
 - `lotXX` — lot number (e.g., `lot42`)
@@ -39,7 +40,7 @@ id: 2026-001
 lot: 42
 owner: John Smith
 address: 123 Alpine Way
-type: new_residence        # new_residence | minor_remodel | major_remodel | landscaping
+type: new_residence # new_residence | minor_remodel | major_remodel | landscaping
 status: preliminary_review # inquiry | preliminary_review | final_review | approved | under_construction | complete | on_hold
 submitted: 2026-03-01
 fees:
@@ -66,12 +67,12 @@ notes: |
 
 **Project types and standard fees** (from Design Guidelines and Construction Rules):
 
-| Type | Review | Compliance | Contractor | Notes |
-|------|--------|------------|------------|-------|
-| `new_residence` | $2,000 | $3,500 + $2,500 re-veg | $5,000 | +$400/additional review; +$100 land coverage variance |
-| `major_remodel` | $1,000 | $2,000 | $2,000 | Additional reviews billed at consultant's rate |
-| `minor_remodel` | $250 | $500 | $500 | Covers 1 review, 1 meeting, 1 inspection; additional at consultant's rate |
-| `landscaping` | $200 | varies | varies | Deposits case-by-case |
+| Type            | Review | Compliance             | Contractor | Notes                                                                     |
+| --------------- | ------ | ---------------------- | ---------- | ------------------------------------------------------------------------- |
+| `new_residence` | $2,000 | $3,500 + $2,500 re-veg | $5,000     | +$400/additional review; +$100 land coverage variance                     |
+| `major_remodel` | $1,000 | $2,000                 | $2,000     | Additional reviews billed at consultant's rate                            |
+| `minor_remodel` | $250   | $500                   | $500       | Covers 1 review, 1 meeting, 1 inspection; additional at consultant's rate |
+| `landscaping`   | $200   | varies                 | varies     | Deposits case-by-case                                                     |
 
 ### Reference documents
 
@@ -80,7 +81,6 @@ documents/
   design-guidelines.md         # Full EMACC Design Guidelines (2006, rev. 2009)
   construction-rules.md        # ACC submittal instructions + Contractor Constraints
   delinquency-policy.md        # Delinquency timeline + ADR requirements
-  document-request-sample.md   # Sample HOA document request letter
 ```
 
 ---
@@ -103,6 +103,7 @@ src/
 ```
 
 **`POST /api/chat`** request body:
+
 ```json
 { "messages": [ { "role": "user", "content": "..." }, ... ] }
 ```
@@ -115,18 +116,19 @@ Response: Server-Sent Events stream, one token at a time. The handler runs the f
 
 Six tools exposed to Claude:
 
-| Tool | Parameters | Description |
-|------|-----------|-------------|
-| `list_projects` | `status?`, `type?`, `lot?` | List projects, optionally filtered |
-| `get_project` | `id` | Return full status.md for a project |
+| Tool             | Parameters                                       | Description                                                                 |
+| ---------------- | ------------------------------------------------ | --------------------------------------------------------------------------- |
+| `list_projects`  | `status?`, `type?`, `lot?`                       | List projects, optionally filtered                                          |
+| `get_project`    | `id`                                             | Return full status.md for a project                                         |
 | `create_project` | `lot`, `owner`, `address`, `type`, `description` | Scaffold new project directory + status.md with standard fees pre-populated |
-| `update_project` | `id`, `fields` | Patch YAML frontmatter (status, fee paid dates, notes, etc.) |
-| `list_documents` | — | Return names and one-line descriptions of available reference docs |
-| `get_document` | `filename` | Return full content of a document from documents/ |
+| `update_project` | `id`, `fields`                                   | Patch YAML frontmatter (status, fee paid dates, notes, etc.)                |
+| `list_documents` | —                                                | Return names and one-line descriptions of available reference docs          |
+| `get_document`   | `filename`                                       | Return full content of a document from documents/                           |
 
 **Document loading strategy:** Lazy. Documents are not pre-loaded into the system prompt. The system prompt includes a one-line description of each document so Claude knows when to reach for it. Claude calls `get_document` when a question requires rule or fee details.
 
 **System prompt** instructs Claude to:
+
 - Act as an assistant for the East Meadows HOA Architectural Control Committee
 - Use `get_document` before answering questions about rules, fees, or requirements (don't rely on training data)
 - Use `list_projects` / `get_project` to answer questions about specific lots or projects
