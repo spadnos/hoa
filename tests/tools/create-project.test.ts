@@ -17,7 +17,7 @@ afterEach(() => {
 
 test('creates project directory and status.md', async () => {
   const result = await createProject(
-    { lot: 42, owner: 'Alice', address: '42 Alpine Way', type: 'new_residence', description: 'new house' },
+    { lot: 42, owner: { name: 'Alice' }, address: '42 Alpine Way', type: 'new_residence', description: 'new house' },
     projectsDir
   );
   expect(typeof result).toBe('object');
@@ -28,7 +28,7 @@ test('creates project directory and status.md', async () => {
 
 test('pre-populates standard fees for new_residence', async () => {
   const result = await createProject(
-    { lot: 1, owner: 'Bob', address: '1 Main St', type: 'new_residence', description: 'build' },
+    { lot: 1, owner: { name: 'Bob' }, address: '1 Main St', type: 'new_residence', description: 'build' },
     projectsDir
   ) as { id: string; directory: string };
 
@@ -42,7 +42,7 @@ test('pre-populates standard fees for new_residence', async () => {
 
 test('pre-populates standard fees for minor_remodel', async () => {
   const result = await createProject(
-    { lot: 2, owner: 'Carol', address: '2 Pine St', type: 'minor_remodel', description: 'deck' },
+    { lot: 2, owner: { name: 'Carol' }, address: '2 Pine St', type: 'minor_remodel', description: 'deck' },
     projectsDir
   ) as { id: string; directory: string };
 
@@ -52,15 +52,62 @@ test('pre-populates standard fees for minor_remodel', async () => {
 
 test('generates sequential IDs within the same year', async () => {
   const r1 = await createProject(
-    { lot: 1, owner: 'A', address: '1 St', type: 'landscaping', description: 'trees' },
+    { lot: 1, owner: { name: 'A' }, address: '1 St', type: 'landscaping', description: 'trees' },
     projectsDir
   ) as { id: string; directory: string };
   const r2 = await createProject(
-    { lot: 2, owner: 'B', address: '2 St', type: 'landscaping', description: 'shrubs' },
+    { lot: 2, owner: { name: 'B' }, address: '2 St', type: 'landscaping', description: 'shrubs' },
     projectsDir
   ) as { id: string; directory: string };
 
   const year = new Date().getFullYear();
   expect(r1.id).toBe(`${year}-001`);
   expect(r2.id).toBe(`${year}-002`);
+});
+
+test('writes owner as a ContactInfo object', async () => {
+  const result = await createProject(
+    {
+      lot: 5,
+      owner: { name: 'Dana', email: 'dana@example.com', phone: '555-000-1111',
+               lot_address: '5 Hill Rd', mailing_address: 'PO Box 5' },
+      address: '5 Hill Rd',
+      type: 'new_residence',
+      description: 'new-house',
+    },
+    projectsDir
+  ) as { id: string; directory: string };
+
+  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
+  expect(data.owner).toMatchObject({ name: 'Dana', email: 'dana@example.com' });
+});
+
+test('writes designer and contractor when provided', async () => {
+  const result = await createProject(
+    {
+      lot: 6,
+      owner: { name: 'Eve' },
+      address: '6 Ridge Rd',
+      type: 'major_remodel',
+      description: 'remodel',
+      designer: { name: 'Frank', company: 'Studio F', email: 'frank@studio.com' },
+      contractor: { name: 'Grace', company: 'GC Inc', phone: '555-222-3333' },
+    },
+    projectsDir
+  ) as { id: string; directory: string };
+
+  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
+  expect(data.designer).toMatchObject({ name: 'Frank', company: 'Studio F' });
+  expect(data.contractor).toMatchObject({ name: 'Grace', company: 'GC Inc' });
+});
+
+test('omits designer and contractor when not provided', async () => {
+  const result = await createProject(
+    { lot: 7, owner: { name: 'Hank' }, address: '7 Peak St', type: 'landscaping', description: 'landscaping' },
+    projectsDir
+  ) as { id: string; directory: string };
+
+  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
+  expect(data.designer).toBeUndefined();
+  expect(data.contractor).toBeUndefined();
 });

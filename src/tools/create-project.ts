@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { Fee, Project, ProjectType, ContactInfo } from '../types';
+import { ContactInfo, Fee, Project, ProjectType } from '../types';
 
 export const createProjectTool: Tool = {
   name: 'create_project',
@@ -12,8 +12,19 @@ export const createProjectTool: Tool = {
     type: 'object' as const,
     properties: {
       lot: { type: 'number', description: 'Lot number' },
-      owner: { type: 'string', description: 'Owner name' },
-      address: { type: 'string', description: 'Property address' },
+      owner: {
+        type: 'object',
+        description: 'Owner contact information',
+        properties: {
+          name: { type: 'string' },
+          email: { type: 'string' },
+          phone: { type: 'string' },
+          lot_address: { type: 'string', description: 'Physical address of the lot' },
+          mailing_address: { type: 'string', description: 'Owner mailing/billing address if different from lot' },
+        },
+        required: ['name'],
+      },
+      address: { type: 'string', description: 'Property address (lot location, used for display)' },
       type: {
         type: 'string',
         enum: ['new_residence', 'minor_remodel', 'major_remodel', 'landscaping'],
@@ -23,6 +34,28 @@ export const createProjectTool: Tool = {
         type: 'string',
         description: 'Short description used in directory name (e.g. "new-house", "deck-addition")',
       },
+      designer: {
+        type: 'object',
+        description: 'Designer contact information (optional)',
+        properties: {
+          name: { type: 'string' },
+          company: { type: 'string' },
+          email: { type: 'string' },
+          phone: { type: 'string' },
+        },
+        required: ['name'],
+      },
+      contractor: {
+        type: 'object',
+        description: 'Contractor contact information (optional)',
+        properties: {
+          name: { type: 'string' },
+          company: { type: 'string' },
+          email: { type: 'string' },
+          phone: { type: 'string' },
+        },
+        required: ['name'],
+      },
     },
     required: ['lot', 'owner', 'address', 'type', 'description'],
   },
@@ -30,10 +63,12 @@ export const createProjectTool: Tool = {
 
 export interface CreateProjectInput {
   lot: number;
-  owner: string;
+  owner: ContactInfo;
   address: string;
   type: ProjectType;
   description: string;
+  designer?: ContactInfo;
+  contractor?: ContactInfo;
 }
 
 const DEFAULT_FEES: Record<ProjectType, Fee[]> = {
@@ -91,12 +126,14 @@ export async function createProject(
     const project: Project = {
       id,
       lot: input.lot,
-      owner: { name: input.owner },
+      owner: input.owner,
       address: input.address,
       type: input.type,
       status: 'inquiry',
       submitted: new Date().toISOString().split('T')[0],
       fees: DEFAULT_FEES[input.type].map((f) => ({ ...f })),
+      ...(input.designer ? { designer: input.designer } : {}),
+      ...(input.contractor ? { contractor: input.contractor } : {}),
     };
 
     fs.writeFileSync(path.join(dirPath, 'status.md'), matter.stringify('', project));
