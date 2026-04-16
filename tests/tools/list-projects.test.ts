@@ -42,3 +42,12 @@ test('filters by lot number', async () => {
   expect(result).toHaveLength(1);
   expect(result[0].lot).toBe(42);
 });
+
+test('summary owner is the owner name string', async () => {
+  makeTestProject(projectsDir, {
+    id: '2026-001',
+    owner: { name: 'Alice Sample', email: 'alice@example.com' },
+  });
+  const result = await listProjects({}, projectsDir);
+  expect(result[0].owner).toBe('Alice Sample');
+});
