@@ -7,7 +7,11 @@ import { Project } from '../types';
 export const updateProjectTool: Tool = {
   name: 'update_project',
   description:
-    'Update fields on an existing project. Use this to change status, mark fees as paid, update notes, etc. Pass the full fees array when updating fee records.',
+    'Update fields on an existing project. Use this to change status, mark fees as paid, update notes, or update contact information. ' +
+    'Pass the full fees array when updating fee records. ' +
+    'Contact fields are nested objects: owner (name, email, phone, lot_address, mailing_address), ' +
+    'designer (name, company, email, phone), contractor (name, company, email, phone). ' +
+    'To add or update a designer or contractor, pass the full contact object in the fields.',
   input_schema: {
     type: 'object' as const,
     properties: {

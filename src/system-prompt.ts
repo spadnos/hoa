@@ -11,6 +11,10 @@ Use get_document to read these before answering questions about rules, fees, or 
 - delinquency-policy.md — Delinquency timeline and ADR requirements
 - document-request-sample.md — Sample HOA document request letter with contacts
 
+## ACC and Board member contacts
+
+Use get_contacts when asked about ACC members, Board members, their roles, or their contact information.
+
 ## Project types and standard fees (from Design Guidelines)
 
 - new_residence: Review $2,000 + Construction Compliance $3,500 + Re-veg Compliance $2,500 + Contractor $5,000 + $400 per additional review
