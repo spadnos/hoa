@@ -5,6 +5,9 @@ import { updateProjectTool, updateProject, UpdateProjectInput } from './update-p
 import { listDocumentsTool, listDocuments } from './list-documents';
 import { getDocumentTool, getDocument, GetDocumentInput } from './get-document';
 import { getContactsTool, getContacts } from './get-contacts';
+import { addContactTool, addContact, AddContactInput } from './add-contact';
+import { editContactTool, editContact, EditContactInput } from './edit-contact';
+import { removeContactTool, removeContact, RemoveContactInput } from './remove-contact';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import path from 'path';
 
@@ -17,6 +20,9 @@ export function getTools(): Tool[] {
     listDocumentsTool,
     getDocumentTool,
     getContactsTool,
+    addContactTool,
+    editContactTool,
+    removeContactTool,
   ];
 }
 
@@ -49,6 +55,12 @@ export async function executeTool(
       return getDocument(input as unknown as GetDocumentInput, documentsDir);
     case 'get_contacts':
       return getContacts(contactsDir);
+    case 'add_contact':
+      return addContact(input as unknown as AddContactInput, contactsDir);
+    case 'edit_contact':
+      return editContact(input as unknown as EditContactInput, contactsDir);
+    case 'remove_contact':
+      return removeContact(input as unknown as RemoveContactInput, contactsDir);
     default:
       return `Unknown tool: ${name}`;
   }

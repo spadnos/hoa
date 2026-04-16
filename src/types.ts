@@ -29,6 +29,18 @@ export interface ContactInfo {
   mailing_address?: string; // owner only
 }
 
+export interface HoaContact {
+  name: string;
+  role: string;
+  email?: string;
+  phone?: string;
+}
+
+export interface HoaMembers {
+  acc_members: HoaContact[];
+  board_members: HoaContact[];
+}
+
 export interface Project {
   id: string;
   lot: number;

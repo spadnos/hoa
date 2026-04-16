@@ -14,19 +14,19 @@ Scan my inbox and find emails related to any of the projects. Add the informatio
 
 ## Add Sections for Designers and Contractors
 
-**Status:** pending
+**Status:** completed
 
 The ACC may need to deal with the designer(s) and/or contractors. Add them as top-level contacts similar to Owners.
 
 ## Enhanced Contact Information
 
-**Status:** pending
+**Status:** completed
 
 For each contact (owners, contractors, desginers) include more detailed contact info, if available, including email, phone, etc.
 
 ## ACC and Board Member Lists
 
-**Status:** pending
+**Status:** completed
 
 This is note project specific data. Create a file(s) with a list of ACC members and their contact information. Create a separate list of the current HoA Board members and their contact info. These lists may be in the same or different files.
 

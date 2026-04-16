@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
+import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
+import { HoaMembers } from '../types';
 
 export const getContactsTool: Tool = {
   name: 'get_contacts',
@@ -12,10 +14,11 @@ export const getContactsTool: Tool = {
   },
 };
 
-export async function getContacts(contactsDir: string): Promise<string> {
+export async function getContacts(contactsDir: string): Promise<HoaMembers | string> {
   const filePath = path.join(contactsDir, 'hoa-members.md');
   if (!fs.existsSync(filePath)) {
     return 'HOA members file not found';
   }
-  return fs.readFileSync(filePath, 'utf-8');
+  const { data } = matter(fs.readFileSync(filePath, 'utf-8'));
+  return data as HoaMembers;
 }
