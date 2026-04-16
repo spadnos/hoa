@@ -20,14 +20,25 @@ export interface Fee {
   paid: string | null;
 }
 
+export interface ContactInfo {
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;         // designer/contractor only
+  lot_address?: string;     // owner only
+  mailing_address?: string; // owner only
+}
+
 export interface Project {
   id: string;
   lot: number;
-  owner: string;
-  address: string;
+  owner: ContactInfo;       // was: string
+  address: string;          // retained for display/summary
+  designer?: ContactInfo;
+  contractor?: ContactInfo;
   type: ProjectType;
   status: ProjectStatus;
-  submitted: string;   // ISO date string, e.g. "2026-04-15"
+  submitted: string;        // ISO date string, e.g. "2026-04-15"
   fees: Fee[];
   notes?: string;
 }
@@ -35,8 +46,8 @@ export interface Project {
 export interface ProjectSummary {
   id: string;
   lot: number;
-  owner: string;
+  owner: string;            // derived from owner.name
   type: ProjectType;
   status: ProjectStatus;
-  directory: string;   // full path to project directory
+  directory: string;        // full path to project directory
 }

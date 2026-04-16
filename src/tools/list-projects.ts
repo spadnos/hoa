@@ -58,7 +58,7 @@ export async function listProjects(
     summaries.push({
       id: project.id,
       lot: project.lot,
-      owner: project.owner,
+      owner: typeof project.owner === 'string' ? project.owner : project.owner?.name ?? '',
       type: project.type,
       status: project.status,
       directory: path.join(projectsDir, entry.name),

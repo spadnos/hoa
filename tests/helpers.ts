@@ -2,7 +2,7 @@ import fs from 'fs';
 import os from 'os';
 import path from 'path';
 import matter from 'gray-matter';
-import { Project, ProjectType, ProjectStatus, Fee } from '../src/types';
+import { Project, ProjectType, ProjectStatus, Fee, ContactInfo } from '../src/types';
 
 export function makeTempDir(): string {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'emhoa-test-'));
@@ -15,7 +15,7 @@ export function makeTestProject(
   const project: Project = {
     id: '2026-001',
     lot: 42,
-    owner: 'Test Owner',
+    owner: { name: 'Test Owner' } as ContactInfo,
     address: '42 Test Lane',
     type: 'new_residence' as ProjectType,
     status: 'preliminary_review' as ProjectStatus,

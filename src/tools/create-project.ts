@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { Fee, Project, ProjectType } from '../types';
+import { Fee, Project, ProjectType, ContactInfo } from '../types';
 
 export const createProjectTool: Tool = {
   name: 'create_project',
@@ -91,7 +91,7 @@ export async function createProject(
     const project: Project = {
       id,
       lot: input.lot,
-      owner: input.owner,
+      owner: { name: input.owner } as ContactInfo,
       address: input.address,
       type: input.type,
       status: 'inquiry',
