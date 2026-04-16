@@ -15,7 +15,7 @@ export function makeTestProject(
   const project: Project = {
     id: '2026-001',
     lot: 42,
-    owner: { name: 'Test Owner' } as ContactInfo,
+    owner: { name: 'Test Owner' },
     address: '42 Test Lane',
     type: 'new_residence' as ProjectType,
     status: 'preliminary_review' as ProjectStatus,

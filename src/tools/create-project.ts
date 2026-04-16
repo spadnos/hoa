@@ -91,7 +91,7 @@ export async function createProject(
     const project: Project = {
       id,
       lot: input.lot,
-      owner: { name: input.owner } as ContactInfo,
+      owner: { name: input.owner },
       address: input.address,
       type: input.type,
       status: 'inquiry',

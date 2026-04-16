@@ -13,9 +13,9 @@ afterEach(() => {
 });
 
 test('returns full project when found by id', async () => {
-  makeTestProject(projectsDir, { id: '2026-001', lot: 42, owner: 'Alice' });
+  makeTestProject(projectsDir, { id: '2026-001', lot: 42, owner: { name: 'Alice' } });
   const result = await getProject({ id: '2026-001' }, projectsDir);
-  expect(result).toMatchObject({ id: '2026-001', lot: 42, owner: 'Alice' });
+  expect(result).toMatchObject({ id: '2026-001', lot: 42, owner: { name: 'Alice' } });
 });
 
 test('returns error string when project not found', async () => {

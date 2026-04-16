@@ -49,11 +49,11 @@ test('returns error string when project not found', async () => {
 });
 
 test('preserves existing fields not in update', async () => {
-  makeTestProject(projectsDir, { id: '2026-001', owner: 'Alice', status: 'inquiry' });
+  makeTestProject(projectsDir, { id: '2026-001', owner: { name: 'Alice' }, status: 'inquiry' });
   await updateProject({ id: '2026-001', fields: { status: 'approved' } }, projectsDir);
 
   const dirs = fs.readdirSync(projectsDir);
   const { data } = matter(fs.readFileSync(path.join(projectsDir, dirs[0], 'status.md'), 'utf-8'));
-  expect(data.owner).toBe('Alice');
+  expect(data.owner.name).toBe('Alice');
   expect(data.status).toBe('approved');
 });

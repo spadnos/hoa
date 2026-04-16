@@ -58,6 +58,7 @@ export async function listProjects(
     summaries.push({
       id: project.id,
       lot: project.lot,
+      // Backward-compat: pre-migration status.md files store owner as a plain string
       owner: typeof project.owner === 'string' ? project.owner : project.owner?.name ?? '',
       type: project.type,
       status: project.status,
