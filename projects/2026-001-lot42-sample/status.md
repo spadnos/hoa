@@ -1,7 +1,9 @@
 ---
 id: '2026-001'
 lot: 42
-owner: Alice Sample
+owner:
+  name: Alice Sample
+  lot_address: 42 Alpine Way, Kirkwood, CA
 address: 42 Alpine Way, Kirkwood, CA
 type: new_residence
 status: preliminary_review
