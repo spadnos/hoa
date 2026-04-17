@@ -209,7 +209,7 @@ export async function getPartyById(id: number, db: Db): Promise<DirectoryParty |
 export async function getCurrentBoardAndACC(db: Db): Promise<HoaMembers> {
   const rows = db
     .prepare(
-      `SELECT p.name, p.email, p.phone, gm.title as role, gm.group_name
+      `SELECT p.id, p.name, p.email, p.phone, gm.title as role, gm.group_name
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
        WHERE p.organization_id = 'emhoa'
@@ -217,10 +217,10 @@ export async function getCurrentBoardAndACC(db: Db): Promise<HoaMembers> {
          AND gm.end_date IS NULL
        ORDER BY gm.group_name, p.name`
     )
-    .all() as Array<{ name: string; email: string | null; phone: string | null; role: string; group_name: string }>;
+    .all() as Array<{ id: number; name: string; email: string | null; phone: string | null; role: string; group_name: string }>;
 
-  const toContact = (r: { name: string; email: string | null; phone: string | null; role: string }): HoaContact => {
-    const c: HoaContact = { name: r.name, role: r.role };
+  const toContact = (r: { id: number; name: string; email: string | null; phone: string | null; role: string }): HoaContact => {
+    const c: HoaContact = { id: r.id, name: r.name, role: r.role };
     if (r.email) c.email = r.email;
     if (r.phone) c.phone = r.phone;
     return c;

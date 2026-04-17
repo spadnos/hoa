@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { HoaContact, HoaMembers } from '@/src/types';
 
 function ContactItem({ contact }: { contact: HoaContact }) {
@@ -5,7 +6,9 @@ function ContactItem({ contact }: { contact: HoaContact }) {
     <div className="py-2 border-b border-gray-200 last:border-0">
       <div className="flex items-center justify-between">
         <div>
-          <span className="text-sm font-medium text-gray-900">{contact.name}</span>
+          <Link href={`/directory/party-${contact.id}`} className="text-sm font-medium text-gray-900 hover:text-blue-600 hover:underline">
+            {contact.name}
+          </Link>
           <span className="text-xs text-gray-500 ml-2">{contact.role}</span>
         </div>
       </div>
