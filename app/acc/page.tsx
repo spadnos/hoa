@@ -7,6 +7,7 @@ import type { ProjectSummary, ProjectStatus } from '@/src/types';
 import StatusBadge from '../components/StatusBadge';
 import DeadlineAlerts from '../components/DeadlineAlert';
 import FeeLedgerCard from '../components/FeeLedgerCard';
+import ProjectTableRow from '../components/ProjectTableRow';
 
 const STATUS_ORDER: ProjectStatus[] = [
   'preliminary_review',
@@ -71,13 +72,13 @@ function ProjectsTable({ byStatus, all }: { byStatus?: Record<string, ProjectSum
 
 function ProjectRow({ project: p }: { project: ProjectSummary }) {
   return (
-    <tr className="border-b border-gray-50 last:border-0">
+    <ProjectTableRow id={p.id}>
       <td className="py-2 font-mono text-xs text-gray-600">{p.id}</td>
       <td className="py-2 text-gray-700">{p.lot}</td>
       <td className="py-2 text-gray-900 truncate pr-2">{p.owner}</td>
       <td className="py-2 text-gray-600">{TYPE_LABELS[p.type] ?? p.type}</td>
       <td className="py-2"><StatusBadge status={p.status} /></td>
-    </tr>
+    </ProjectTableRow>
   );
 }
 
