@@ -1,25 +1,21 @@
-import fs from 'fs';
 import { getProject } from '../../src/tools/get-project';
-import { makeTempDir, makeTestProject } from '../helpers';
+import { makeTestDb, seedTestProject } from '../helpers';
+import type { Db } from '../../src/db';
 
-let projectsDir: string;
+let db: Db;
 
 beforeEach(() => {
-  projectsDir = makeTempDir();
-});
-
-afterEach(() => {
-  fs.rmSync(projectsDir, { recursive: true, force: true });
+  db = makeTestDb();
 });
 
 test('returns full project when found by id', async () => {
-  makeTestProject(projectsDir, { id: '2026-001', lot: 42, owner: { name: 'Alice' } });
-  const result = await getProject({ id: '2026-001' }, projectsDir);
+  seedTestProject(db, { id: '2026-001', lot: 42, owner: { name: 'Alice' } });
+  const result = await getProject({ id: '2026-001' }, db);
   expect(result).toMatchObject({ id: '2026-001', lot: 42, owner: { name: 'Alice' } });
 });
 
 test('returns error string when project not found', async () => {
-  const result = await getProject({ id: '9999-999' }, projectsDir);
+  const result = await getProject({ id: '9999-999' }, db);
   expect(typeof result).toBe('string');
   expect(result).toContain('not found');
 });

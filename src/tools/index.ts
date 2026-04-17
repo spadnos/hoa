@@ -8,8 +8,26 @@ import { getContactsTool, getContacts } from './get-contacts';
 import { addContactTool, addContact, AddContactInput } from './add-contact';
 import { editContactTool, editContact, EditContactInput } from './edit-contact';
 import { removeContactTool, removeContact, RemoveContactInput } from './remove-contact';
+import { getFeeLedgerTool, getFeeLedger } from './fee-ledger';
+import { getDeadlinesTool, getDeadlines, GetDeadlinesInput } from './get-deadlines';
+import { addConditionTool, addCondition, AddConditionInput } from './add-condition';
+import { updateConditionTool, updateCondition, UpdateConditionInput } from './update-condition';
+import { listConditionsTool, listConditions, ListConditionsInput } from './list-conditions';
+import { logInspectionTool, logInspection, LogInspectionInput } from './log-inspection';
+import { listInspectionsTool, listInspections, ListInspectionsInput } from './list-inspections';
+import {
+  addProjectDocumentTool,
+  addProjectDocument,
+  AddProjectDocumentInput,
+} from './add-project-document';
+import {
+  listProjectDocumentsTool,
+  listProjectDocuments,
+  ListProjectDocumentsInput,
+} from './list-project-documents';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import path from 'path';
+import { getDb } from '../db';
 
 export function getTools(): Tool[] {
   return [
@@ -23,44 +41,67 @@ export function getTools(): Tool[] {
     addContactTool,
     editContactTool,
     removeContactTool,
+    getFeeLedgerTool,
+    getDeadlinesTool,
+    addConditionTool,
+    updateConditionTool,
+    listConditionsTool,
+    logInspectionTool,
+    listInspectionsTool,
+    addProjectDocumentTool,
+    listProjectDocumentsTool,
   ];
 }
 
-function dirs(): { projectsDir: string; documentsDir: string; contactsDir: string } {
-  return {
-    projectsDir: process.env.PROJECTS_DIR ?? path.join(process.cwd(), 'projects'),
-    documentsDir: process.env.DOCUMENTS_DIR ?? path.join(process.cwd(), 'documents'),
-    contactsDir: process.env.CONTACTS_DIR ?? path.join(process.cwd(), 'contacts'),
-  };
+function documentsDir(): string {
+  return process.env.DOCUMENTS_DIR ?? path.join(process.cwd(), 'documents');
 }
 
 export async function executeTool(
   name: string,
   input: Record<string, unknown>
 ): Promise<unknown> {
-  const { projectsDir, documentsDir, contactsDir } = dirs();
+  const db = getDb();
 
   switch (name) {
     case 'list_projects':
-      return listProjects(input as ListProjectsInput, projectsDir);
+      return listProjects(input as ListProjectsInput, db);
     case 'get_project':
-      return getProject(input as unknown as GetProjectInput, projectsDir);
+      return getProject(input as unknown as GetProjectInput, db);
     case 'create_project':
-      return createProject(input as unknown as CreateProjectInput, projectsDir);
+      return createProject(input as unknown as CreateProjectInput, db);
     case 'update_project':
-      return updateProject(input as unknown as UpdateProjectInput, projectsDir);
+      return updateProject(input as unknown as UpdateProjectInput, db);
     case 'list_documents':
-      return listDocuments(documentsDir);
+      return listDocuments(documentsDir());
     case 'get_document':
-      return getDocument(input as unknown as GetDocumentInput, documentsDir);
+      return getDocument(input as unknown as GetDocumentInput, documentsDir());
     case 'get_contacts':
-      return getContacts(contactsDir);
+      return getContacts(db);
     case 'add_contact':
-      return addContact(input as unknown as AddContactInput, contactsDir);
+      return addContact(input as unknown as AddContactInput, db);
     case 'edit_contact':
-      return editContact(input as unknown as EditContactInput, contactsDir);
+      return editContact(input as unknown as EditContactInput, db);
     case 'remove_contact':
-      return removeContact(input as unknown as RemoveContactInput, contactsDir);
+      return removeContact(input as unknown as RemoveContactInput, db);
+    case 'get_fee_ledger':
+      return getFeeLedger(db);
+    case 'get_deadlines':
+      return getDeadlines(input as unknown as GetDeadlinesInput, db);
+    case 'add_condition':
+      return addCondition(input as unknown as AddConditionInput, db);
+    case 'update_condition':
+      return updateCondition(input as unknown as UpdateConditionInput, db);
+    case 'list_conditions':
+      return listConditions(input as unknown as ListConditionsInput, db);
+    case 'log_inspection':
+      return logInspection(input as unknown as LogInspectionInput, db);
+    case 'list_inspections':
+      return listInspections(input as unknown as ListInspectionsInput, db);
+    case 'add_project_document':
+      return addProjectDocument(input as unknown as AddProjectDocumentInput, db);
+    case 'list_project_documents':
+      return listProjectDocuments(input as unknown as ListProjectDocumentsInput, db);
     default:
       return `Unknown tool: ${name}`;
   }

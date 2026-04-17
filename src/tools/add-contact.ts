@@ -1,15 +1,12 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { HoaContact, HoaMembers } from '../types';
+import type { Db } from '../db';
 
 export const addContactTool: Tool = {
   name: 'add_contact',
   description:
     'Add a new contact to the HOA members list. ' +
     'Specify the section ("acc" for ACC Members, "board" for Board Members), ' +
-    'along with the contact\'s name, role, and optional email and phone.',
+    "along with the contact's name, role, and optional email and phone.",
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -37,27 +34,25 @@ export interface AddContactInput {
 
 export async function addContact(
   input: AddContactInput,
-  contactsDir: string
+  db: Db
 ): Promise<{ section: string; name: string } | string> {
-  const filePath = path.join(contactsDir, 'hoa-members.md');
-  if (!fs.existsSync(filePath)) return 'HOA members file not found';
+  const groupName = input.section === 'acc' ? 'acc_member' : 'board_member';
 
-  const { data, content } = matter(fs.readFileSync(filePath, 'utf-8'));
-  const members: HoaMembers = { ...data } as HoaMembers;
-  const key = input.section === 'acc' ? 'acc_members' : 'board_members';
-  const list: HoaContact[] = [...(members[key] ?? [])];
+  const existing = db
+    .prepare(
+      `SELECT id FROM contacts
+       WHERE organization_id = 'emhoa' AND group_name = ? AND LOWER(name) = LOWER(?)`
+    )
+    .get(groupName, input.name);
 
-  if (list.some((c) => c.name.toLowerCase() === input.name.toLowerCase())) {
-    return `Contact "${input.name}" already exists in ${key}`;
+  if (existing) {
+    return `Contact "${input.name}" already exists in ${groupName}s`;
   }
 
-  const newContact: HoaContact = { name: input.name, role: input.role };
-  if (input.email) newContact.email = input.email;
-  if (input.phone) newContact.phone = input.phone;
+  db.prepare(
+    `INSERT INTO contacts (organization_id, name, role, group_name, email, phone)
+     VALUES ('emhoa', ?, ?, ?, ?, ?)`
+  ).run(input.name, input.role, groupName, input.email ?? null, input.phone ?? null);
 
-  list.push(newContact);
-  members[key] = list;
-
-  fs.writeFileSync(filePath, matter.stringify(content, members));
   return { section: input.section, name: input.name };
 }

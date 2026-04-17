@@ -1,37 +1,26 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import { getContacts } from '../../src/tools/get-contacts';
-import { makeTempDir } from '../helpers';
+import { makeTestDb, seedTestContact } from '../helpers';
+import type { Db } from '../../src/db';
 
-let contactsDir: string;
-
-function writeContactsFile(dir: string, data: object): void {
-  fs.writeFileSync(path.join(dir, 'hoa-members.md'), matter.stringify('', data));
-}
+let db: Db;
 
 beforeEach(() => {
-  contactsDir = makeTempDir();
-  writeContactsFile(contactsDir, {
-    acc_members: [{ name: 'Jane Doe', role: 'Chair', email: 'jane@hoa.org' }],
-    board_members: [{ name: 'Bob Smith', role: 'President' }],
-  });
-});
-
-afterEach(() => {
-  fs.rmSync(contactsDir, { recursive: true, force: true });
+  db = makeTestDb();
+  seedTestContact(db, { name: 'Jane Doe', role: 'Chair', group_name: 'acc_member', email: 'jane@hoa.org' });
+  seedTestContact(db, { name: 'Bob Smith', role: 'President', group_name: 'board_member' });
 });
 
 test('returns parsed contact data', async () => {
-  const result = await getContacts(contactsDir);
+  const result = await getContacts(db);
   expect(result).toMatchObject({
     acc_members: [{ name: 'Jane Doe', role: 'Chair' }],
     board_members: [{ name: 'Bob Smith', role: 'President' }],
   });
 });
 
-test('returns error message when file does not exist', async () => {
-  fs.rmSync(path.join(contactsDir, 'hoa-members.md'));
-  const result = await getContacts(contactsDir);
-  expect(result).toMatch(/not found/i);
+test('returns empty lists when no contacts exist', async () => {
+  const emptyDb = makeTestDb();
+  const result = await getContacts(emptyDb);
+  expect(result.acc_members).toHaveLength(0);
+  expect(result.board_members).toHaveLength(0);
 });

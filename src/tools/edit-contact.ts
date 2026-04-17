@@ -1,8 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { HoaContact, HoaMembers } from '../types';
+import { HoaContact } from '../types';
+import type { Db } from '../db';
 
 export const editContactTool: Tool = {
   name: 'edit_contact',
@@ -42,22 +40,45 @@ export interface EditContactInput {
 
 export async function editContact(
   input: EditContactInput,
-  contactsDir: string
+  db: Db
 ): Promise<{ section: string; name: string } | string> {
-  const filePath = path.join(contactsDir, 'hoa-members.md');
-  if (!fs.existsSync(filePath)) return 'HOA members file not found';
+  const groupName = input.section === 'acc' ? 'acc_member' : 'board_member';
 
-  const { data, content } = matter(fs.readFileSync(filePath, 'utf-8'));
-  const members: HoaMembers = { ...data } as HoaMembers;
-  const key = input.section === 'acc' ? 'acc_members' : 'board_members';
-  const list: HoaContact[] = members[key] ?? [];
+  const row = db
+    .prepare(
+      `SELECT id FROM contacts
+       WHERE organization_id = 'emhoa' AND group_name = ? AND LOWER(name) = LOWER(?)`
+    )
+    .get(groupName, input.name) as { id: number } | undefined;
 
-  const idx = list.findIndex((c) => c.name.toLowerCase() === input.name.toLowerCase());
-  if (idx === -1) return `Contact "${input.name}" not found in ${key}`;
+  if (!row) return `Contact "${input.name}" not found in ${groupName}s`;
 
-  const updated = { ...list[idx], ...input.fields };
-  members[key] = list.map((c, i) => (i === idx ? updated : c));
+  const { name, role, email, phone } = input.fields;
+  const sets: string[] = [];
+  const values: unknown[] = [];
 
-  fs.writeFileSync(filePath, matter.stringify(content, members));
-  return { section: input.section, name: updated.name };
+  if (name !== undefined) {
+    sets.push('name = ?');
+    values.push(name);
+  }
+  if (role !== undefined) {
+    sets.push('role = ?');
+    values.push(role);
+  }
+  if (email !== undefined) {
+    sets.push('email = ?');
+    values.push(email);
+  }
+  if (phone !== undefined) {
+    sets.push('phone = ?');
+    values.push(phone);
+  }
+
+  if (sets.length > 0) {
+    values.push(row.id);
+    db.prepare(`UPDATE contacts SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+  }
+
+  const finalName = (input.fields.name ?? input.name) as string;
+  return { section: input.section, name: finalName };
 }

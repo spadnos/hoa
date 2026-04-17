@@ -1,8 +1,5 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { HoaContact, HoaMembers } from '../types';
+import type { Db } from '../db';
 
 export const removeContactTool: Tool = {
   name: 'remove_contact',
@@ -30,23 +27,20 @@ export interface RemoveContactInput {
 
 export async function removeContact(
   input: RemoveContactInput,
-  contactsDir: string
+  db: Db
 ): Promise<{ section: string; name: string } | string> {
-  const filePath = path.join(contactsDir, 'hoa-members.md');
-  if (!fs.existsSync(filePath)) return 'HOA members file not found';
+  const groupName = input.section === 'acc' ? 'acc_member' : 'board_member';
 
-  const { data, content } = matter(fs.readFileSync(filePath, 'utf-8'));
-  const members: HoaMembers = { ...data } as HoaMembers;
-  const key = input.section === 'acc' ? 'acc_members' : 'board_members';
-  const list: HoaContact[] = members[key] ?? [];
+  const result = db
+    .prepare(
+      `DELETE FROM contacts
+       WHERE organization_id = 'emhoa' AND group_name = ? AND LOWER(name) = LOWER(?)`
+    )
+    .run(groupName, input.name);
 
-  const before = list.length;
-  members[key] = list.filter((c) => c.name.toLowerCase() !== input.name.toLowerCase());
-
-  if (members[key].length === before) {
-    return `Contact "${input.name}" not found in ${key}`;
+  if (result.changes === 0) {
+    return `Contact "${input.name}" not found in ${groupName}s`;
   }
 
-  fs.writeFileSync(filePath, matter.stringify(content, members));
   return { section: input.section, name: input.name };
 }

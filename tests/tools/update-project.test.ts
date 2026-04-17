@@ -1,29 +1,25 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import { updateProject } from '../../src/tools/update-project';
-import { makeTempDir, makeTestProject } from '../helpers';
+import { makeTestDb, seedTestProject } from '../helpers';
+import type { Db } from '../../src/db';
 
-let projectsDir: string;
+let db: Db;
 
 beforeEach(() => {
-  projectsDir = makeTempDir();
-});
-
-afterEach(() => {
-  fs.rmSync(projectsDir, { recursive: true, force: true });
+  db = makeTestDb();
 });
 
 test('updates status field', async () => {
-  const dir = makeTestProject(projectsDir, { id: '2026-001', status: 'inquiry' });
-  await updateProject({ id: '2026-001', fields: { status: 'preliminary_review' } }, projectsDir);
+  seedTestProject(db, { id: '2026-001', status: 'inquiry' });
+  await updateProject({ id: '2026-001', fields: { status: 'preliminary_review' } }, db);
 
-  const { data } = matter(fs.readFileSync(path.join(dir, 'status.md'), 'utf-8'));
-  expect(data.status).toBe('preliminary_review');
+  const row = db
+    .prepare(`SELECT status FROM projects WHERE id = '2026-001'`)
+    .get() as { status: string };
+  expect(row.status).toBe('preliminary_review');
 });
 
 test('updates fees array', async () => {
-  const dir = makeTestProject(projectsDir, {
+  seedTestProject(db, {
     id: '2026-001',
     fees: [{ description: 'Review Fee', amount: 200, due_at: 'preliminary_review', paid: null }],
   });
@@ -32,28 +28,38 @@ test('updates fees array', async () => {
     {
       id: '2026-001',
       fields: {
-        fees: [{ description: 'Review Fee', amount: 200, due_at: 'preliminary_review', paid: '2026-04-15' }],
+        fees: [
+          {
+            description: 'Review Fee',
+            amount: 200,
+            due_at: 'preliminary_review',
+            paid: '2026-04-15',
+          },
+        ],
       },
     },
-    projectsDir
+    db
   );
 
-  const { data } = matter(fs.readFileSync(path.join(dir, 'status.md'), 'utf-8'));
-  expect(data.fees[0].paid).toBe('2026-04-15');
+  const fees = db
+    .prepare(`SELECT paid_at FROM fees WHERE project_id = '2026-001'`)
+    .all() as { paid_at: string | null }[];
+  expect(fees[0].paid_at).toBe('2026-04-15');
 });
 
 test('returns error string when project not found', async () => {
-  const result = await updateProject({ id: '9999-999', fields: { status: 'approved' } }, projectsDir);
+  const result = await updateProject({ id: '9999-999', fields: { status: 'approved' } }, db);
   expect(typeof result).toBe('string');
   expect(result).toContain('not found');
 });
 
 test('preserves existing fields not in update', async () => {
-  makeTestProject(projectsDir, { id: '2026-001', owner: { name: 'Alice' }, status: 'inquiry' });
-  await updateProject({ id: '2026-001', fields: { status: 'approved' } }, projectsDir);
+  seedTestProject(db, { id: '2026-001', owner: { name: 'Alice' }, status: 'inquiry' });
+  await updateProject({ id: '2026-001', fields: { status: 'approved' } }, db);
 
-  const dirs = fs.readdirSync(projectsDir);
-  const { data } = matter(fs.readFileSync(path.join(projectsDir, dirs[0], 'status.md'), 'utf-8'));
-  expect(data.owner.name).toBe('Alice');
-  expect(data.status).toBe('approved');
+  const row = db
+    .prepare(`SELECT owner_name, status FROM projects WHERE id = '2026-001'`)
+    .get() as { owner_name: string; status: string };
+  expect(row.owner_name).toBe('Alice');
+  expect(row.status).toBe('approved');
 });

@@ -44,8 +44,8 @@ export interface HoaMembers {
 export interface Project {
   id: string;
   lot: number;
-  owner: ContactInfo;       // was: string
-  address: string;          // retained for display/summary
+  owner: ContactInfo;
+  address: string;
   designer?: ContactInfo;
   contractor?: ContactInfo;
   type: ProjectType;
@@ -53,6 +53,10 @@ export interface Project {
   submitted: string;        // ISO date string, e.g. "2026-04-15"
   fees: Fee[];
   notes?: string;
+  preliminary_approved_at?: string;
+  final_approved_at?: string;
+  construction_started_at?: string;
+  owner_notified_complete_at?: string;
 }
 
 export interface ProjectSummary {
@@ -61,5 +65,33 @@ export interface ProjectSummary {
   owner: string;            // derived from owner.name
   type: ProjectType;
   status: ProjectStatus;
-  directory: string;        // full path to project directory
+  directory?: string;       // deprecated: no longer populated with SQLite backend
+}
+
+export interface Condition {
+  id: number;
+  project_id: string;
+  description: string;
+  satisfied_at: string | null;
+  created_at: string;
+}
+
+export interface Inspection {
+  id: number;
+  project_id: string;
+  type: string;
+  inspector: string;
+  date: string;
+  outcome: string;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface ProjectDocument {
+  id: number;
+  project_id: string;
+  title: string;
+  file_path: string;
+  description: string | null;
+  uploaded_at: string;
 }
