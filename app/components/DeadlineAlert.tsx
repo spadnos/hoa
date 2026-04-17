@@ -9,7 +9,7 @@ function urgencyClass(days: number): string {
 export default function DeadlineAlerts({ deadlines }: { deadlines: Deadline[] }) {
   if (deadlines.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-5">
+      <div className="bg-gray-100 rounded-xl border-2 border-gray-300 p-5">
         <h2 className="text-base font-semibold text-gray-900 mb-2">Upcoming Deadlines</h2>
         <p className="text-sm text-gray-400">No deadlines in the next 90 days.</p>
       </div>
@@ -17,7 +17,7 @@ export default function DeadlineAlerts({ deadlines }: { deadlines: Deadline[] })
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-gray-100 rounded-xl border-2 border-gray-300 p-5">
       <h2 className="text-base font-semibold text-gray-900 mb-4">Upcoming Deadlines</h2>
       <ul className="space-y-2">
         {deadlines.map((d, i) => (

@@ -21,11 +21,14 @@ const MOCK_ANNOUNCEMENTS = [
 
 export default function AnnouncementsCard() {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
-      <h2 className="text-base font-semibold text-gray-900 mb-4">Recent Announcements</h2>
+    <div className="bg-gray-100 rounded-xl border-2 border-gray-300 p-5">
+      <div className="flex items-center gap-2 mb-4">
+        <h2 className="text-base font-semibold text-gray-900">Recent Announcements</h2>
+        <span className="text-xs font-medium bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Placeholder</span>
+      </div>
       <ul className="space-y-4">
         {MOCK_ANNOUNCEMENTS.map((a) => (
-          <li key={a.id} className="border-b border-gray-100 last:border-0 pb-4 last:pb-0">
+          <li key={a.id} className="border-b border-gray-200 last:border-0 pb-4 last:pb-0">
             <div className="flex items-center justify-between mb-1">
               <span className="text-sm font-medium text-gray-900">{a.title}</span>
               <span className="text-xs text-gray-400">{a.date}</span>

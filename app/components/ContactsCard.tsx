@@ -2,7 +2,7 @@ import type { HoaContact, HoaMembers } from '@/src/types';
 
 function ContactItem({ contact }: { contact: HoaContact }) {
   return (
-    <div className="py-2 border-b border-gray-100 last:border-0">
+    <div className="py-2 border-b border-gray-200 last:border-0">
       <div className="flex items-center justify-between">
         <div>
           <span className="text-sm font-medium text-gray-900">{contact.name}</span>
@@ -32,7 +32,7 @@ export default function ContactsCard({ contacts, showGroup = 'both', title = 'Co
   const board = showGroup === 'board_member' || showGroup === 'both' ? contacts.board_members : [];
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5">
+    <div className="bg-gray-100 rounded-xl border-2 border-gray-300 p-5">
       <h2 className="text-base font-semibold text-gray-900 mb-4">{title}</h2>
       {acc.length > 0 && (
         <div className="mb-4">
