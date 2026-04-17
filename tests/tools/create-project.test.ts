@@ -1,64 +1,68 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import { createProject } from '../../src/tools/create-project';
-import { makeTempDir } from '../helpers';
+import { makeTestDb } from '../helpers';
+import type { Db } from '../../src/db';
 
-let projectsDir: string;
+let db: Db;
 
 beforeEach(() => {
-  projectsDir = makeTempDir();
-  fs.mkdirSync(projectsDir, { recursive: true });
+  db = makeTestDb();
 });
 
-afterEach(() => {
-  fs.rmSync(projectsDir, { recursive: true, force: true });
-});
-
-test('creates project directory and status.md', async () => {
+test('creates project and returns id', async () => {
   const result = await createProject(
-    { lot: 42, owner: { name: 'Alice' }, address: '42 Alpine Way', type: 'new_residence', description: 'new house' },
-    projectsDir
+    {
+      lot: 42,
+      owner: { name: 'Alice' },
+      address: '42 Alpine Way',
+      type: 'new_residence',
+      description: 'new house',
+    },
+    db
   );
   expect(typeof result).toBe('object');
-  const project = result as { id: string; directory: string };
+  const project = result as { id: string };
   expect(project.id).toMatch(/^\d{4}-001$/);
-  expect(fs.existsSync(path.join(project.directory, 'status.md'))).toBe(true);
+
+  const row = db.prepare(`SELECT id FROM projects WHERE id = ?`).get(project.id);
+  expect(row).toBeTruthy();
 });
 
 test('pre-populates standard fees for new_residence', async () => {
-  const result = await createProject(
+  const result = (await createProject(
     { lot: 1, owner: { name: 'Bob' }, address: '1 Main St', type: 'new_residence', description: 'build' },
-    projectsDir
-  ) as { id: string; directory: string };
+    db
+  )) as { id: string };
 
-  const statusPath = path.join(result.directory, 'status.md');
-  const { data } = matter(fs.readFileSync(statusPath, 'utf-8'));
-  expect(data.fees).toHaveLength(4);
-  expect(data.fees[0].description).toBe('EMACC Review Fee');
-  expect(data.fees[0].amount).toBe(2000);
-  expect(data.fees[0].paid).toBeNull();
+  const fees = db
+    .prepare(`SELECT description, amount, paid_at FROM fees WHERE project_id = ? ORDER BY id`)
+    .all(result.id) as { description: string; amount: number; paid_at: string | null }[];
+  expect(fees).toHaveLength(4);
+  expect(fees[0].description).toBe('EMACC Review Fee');
+  expect(fees[0].amount).toBe(2000);
+  expect(fees[0].paid_at).toBeNull();
 });
 
 test('pre-populates standard fees for minor_remodel', async () => {
-  const result = await createProject(
+  const result = (await createProject(
     { lot: 2, owner: { name: 'Carol' }, address: '2 Pine St', type: 'minor_remodel', description: 'deck' },
-    projectsDir
-  ) as { id: string; directory: string };
+    db
+  )) as { id: string };
 
-  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
-  expect(data.fees[0].amount).toBe(250);
+  const fees = db
+    .prepare(`SELECT amount FROM fees WHERE project_id = ? ORDER BY id`)
+    .all(result.id) as { amount: number }[];
+  expect(fees[0].amount).toBe(250);
 });
 
 test('generates sequential IDs within the same year', async () => {
-  const r1 = await createProject(
+  const r1 = (await createProject(
     { lot: 1, owner: { name: 'A' }, address: '1 St', type: 'landscaping', description: 'trees' },
-    projectsDir
-  ) as { id: string; directory: string };
-  const r2 = await createProject(
+    db
+  )) as { id: string };
+  const r2 = (await createProject(
     { lot: 2, owner: { name: 'B' }, address: '2 St', type: 'landscaping', description: 'shrubs' },
-    projectsDir
-  ) as { id: string; directory: string };
+    db
+  )) as { id: string };
 
   const year = new Date().getFullYear();
   expect(r1.id).toBe(`${year}-001`);
@@ -66,24 +70,33 @@ test('generates sequential IDs within the same year', async () => {
 });
 
 test('writes owner as a ContactInfo object', async () => {
-  const result = await createProject(
+  const result = (await createProject(
     {
       lot: 5,
-      owner: { name: 'Dana', email: 'dana@example.com', phone: '555-000-1111',
-               lot_address: '5 Hill Rd', mailing_address: 'PO Box 5' },
+      owner: {
+        name: 'Dana',
+        email: 'dana@example.com',
+        phone: '555-000-1111',
+        lot_address: '5 Hill Rd',
+        mailing_address: 'PO Box 5',
+      },
       address: '5 Hill Rd',
       type: 'new_residence',
       description: 'new-house',
     },
-    projectsDir
-  ) as { id: string; directory: string };
+    db
+  )) as { id: string };
 
-  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
-  expect(data.owner).toMatchObject({ name: 'Dana', email: 'dana@example.com' });
+  const row = db
+    .prepare(`SELECT owner_name, owner_email, owner_lot_address FROM projects WHERE id = ?`)
+    .get(result.id) as { owner_name: string; owner_email: string; owner_lot_address: string };
+  expect(row.owner_name).toBe('Dana');
+  expect(row.owner_email).toBe('dana@example.com');
+  expect(row.owner_lot_address).toBe('5 Hill Rd');
 });
 
 test('writes designer and contractor when provided', async () => {
-  const result = await createProject(
+  const result = (await createProject(
     {
       lot: 6,
       owner: { name: 'Eve' },
@@ -93,21 +106,40 @@ test('writes designer and contractor when provided', async () => {
       designer: { name: 'Frank', company: 'Studio F', email: 'frank@studio.com' },
       contractor: { name: 'Grace', company: 'GC Inc', phone: '555-222-3333' },
     },
-    projectsDir
-  ) as { id: string; directory: string };
+    db
+  )) as { id: string };
 
-  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
-  expect(data.designer).toMatchObject({ name: 'Frank', company: 'Studio F' });
-  expect(data.contractor).toMatchObject({ name: 'Grace', company: 'GC Inc' });
+  const row = db
+    .prepare(
+      `SELECT designer_name, designer_company, contractor_name, contractor_company FROM projects WHERE id = ?`
+    )
+    .get(result.id) as {
+    designer_name: string;
+    designer_company: string;
+    contractor_name: string;
+    contractor_company: string;
+  };
+  expect(row.designer_name).toBe('Frank');
+  expect(row.designer_company).toBe('Studio F');
+  expect(row.contractor_name).toBe('Grace');
+  expect(row.contractor_company).toBe('GC Inc');
 });
 
 test('omits designer and contractor when not provided', async () => {
-  const result = await createProject(
-    { lot: 7, owner: { name: 'Hank' }, address: '7 Peak St', type: 'landscaping', description: 'landscaping' },
-    projectsDir
-  ) as { id: string; directory: string };
+  const result = (await createProject(
+    {
+      lot: 7,
+      owner: { name: 'Hank' },
+      address: '7 Peak St',
+      type: 'landscaping',
+      description: 'landscaping',
+    },
+    db
+  )) as { id: string };
 
-  const { data } = matter(fs.readFileSync(path.join(result.directory, 'status.md'), 'utf-8'));
-  expect(data.designer).toBeUndefined();
-  expect(data.contractor).toBeUndefined();
+  const row = db
+    .prepare(`SELECT designer_name, contractor_name FROM projects WHERE id = ?`)
+    .get(result.id) as { designer_name: string | null; contractor_name: string | null };
+  expect(row.designer_name).toBeNull();
+  expect(row.contractor_name).toBeNull();
 });

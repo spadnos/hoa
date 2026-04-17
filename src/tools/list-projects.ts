@@ -1,8 +1,6 @@
-import fs from 'fs';
-import path from 'path';
-import matter from 'gray-matter';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { Project, ProjectSummary } from '../types';
+import { ProjectSummary, ProjectType, ProjectStatus } from '../types';
+import type { Db } from '../db';
 
 export const listProjectsTool: Tool = {
   name: 'list_projects',
@@ -33,38 +31,41 @@ export interface ListProjectsInput {
   lot?: number;
 }
 
-export async function listProjects(
-  input: ListProjectsInput,
-  projectsDir: string
-): Promise<ProjectSummary[]> {
-  if (!fs.existsSync(projectsDir)) return [];
+interface SummaryRow {
+  id: string;
+  lot: number;
+  owner_name: string;
+  type: ProjectType;
+  status: ProjectStatus;
+}
 
-  const entries = fs.readdirSync(projectsDir, { withFileTypes: true });
-  const summaries: ProjectSummary[] = [];
+export async function listProjects(input: ListProjectsInput, db: Db): Promise<ProjectSummary[]> {
+  let sql =
+    'SELECT id, lot, owner_name, type, status FROM projects WHERE organization_id = ?';
+  const params: unknown[] = ['emhoa'];
 
-  for (const entry of entries) {
-    if (!entry.isDirectory()) continue;
-    const statusPath = path.join(projectsDir, entry.name, 'status.md');
-    if (!fs.existsSync(statusPath)) continue;
-
-    const content = fs.readFileSync(statusPath, 'utf-8');
-    const { data } = matter(content);
-    const project = data as Project;
-
-    if (input.status && project.status !== input.status) continue;
-    if (input.type && project.type !== input.type) continue;
-    if (input.lot !== undefined && project.lot !== input.lot) continue;
-
-    summaries.push({
-      id: project.id,
-      lot: project.lot,
-      // Backward-compat: pre-migration status.md files store owner as a plain string
-      owner: typeof project.owner === 'string' ? project.owner : project.owner?.name ?? '',
-      type: project.type,
-      status: project.status,
-      directory: path.join(projectsDir, entry.name),
-    });
+  if (input.status) {
+    sql += ' AND status = ?';
+    params.push(input.status);
+  }
+  if (input.type) {
+    sql += ' AND type = ?';
+    params.push(input.type);
+  }
+  if (input.lot !== undefined) {
+    sql += ' AND lot = ?';
+    params.push(input.lot);
   }
 
-  return summaries.sort((a, b) => a.id.localeCompare(b.id));
+  sql += ' ORDER BY id';
+
+  const rows = db.prepare(sql).all(...params) as SummaryRow[];
+
+  return rows.map((row) => ({
+    id: row.id,
+    lot: row.lot,
+    owner: row.owner_name,
+    type: row.type,
+    status: row.status,
+  }));
 }
