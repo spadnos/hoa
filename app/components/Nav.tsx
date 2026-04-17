@@ -23,7 +23,9 @@ export default function Nav() {
               key={link.href}
               href={link.href}
               className={`text-sm font-medium transition-opacity hover:opacity-100 ${
-                pathname === link.href ? 'opacity-100 underline underline-offset-4' : 'opacity-75'
+                pathname === link.href || (link.href !== '/' && pathname.startsWith(link.href + '/'))
+                  ? 'opacity-100 underline underline-offset-4'
+                  : 'opacity-75'
               }`}
             >
               {link.label}

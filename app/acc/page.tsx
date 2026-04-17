@@ -1,141 +1,98 @@
-import { Fragment } from 'react';
-import { listProjects } from '@/src/tools/list-projects';
-import { getDeadlines } from '@/src/tools/get-deadlines';
-import { getFeeLedger } from '@/src/tools/fee-ledger';
+import Link from 'next/link';
+import { FileText, BookOpen, ClipboardList } from 'lucide-react';
+import { getContacts } from '@/src/tools/get-contacts';
 import { getDb } from '@/src/db';
-import type { ProjectSummary, ProjectStatus } from '@/src/types';
-import StatusBadge from '../components/StatusBadge';
-import DeadlineAlerts from '../components/DeadlineAlert';
-import FeeLedgerCard from '../components/FeeLedgerCard';
-import ProjectTableRow from '../components/ProjectTableRow';
+import ContactsCard from '../components/ContactsCard';
 
-const STATUS_ORDER: ProjectStatus[] = [
-  'preliminary_review',
-  'final_review',
-  'approved',
-  'under_construction',
-  'inquiry',
-  'on_hold',
-  'complete',
+const DOCUMENTS = [
+  {
+    icon: BookOpen,
+    title: 'Design Guidelines',
+    description: 'Architectural standards and aesthetic requirements for all improvements',
+  },
+  {
+    icon: ClipboardList,
+    title: 'ACC Application Form',
+    description: 'Required form for submitting any project for ACC review',
+  },
+  {
+    icon: FileText,
+    title: 'CC&Rs',
+    description: 'Covenants, Conditions & Restrictions governing the community',
+  },
 ];
 
-const TYPE_LABELS: Record<string, string> = {
-  new_residence: 'New Residence',
-  major_remodel: 'Major Remodel',
-  minor_remodel: 'Minor Remodel',
-  landscaping: 'Landscaping',
-};
+const FAQS = [
+  {
+    q: 'If you want to remodel...',
+    a: 'Any remodel affecting the exterior of your home requires ACC approval before work begins. Minor remodels (paint, roofing, windows matching existing style) follow a streamlined review, while major remodels (additions, structural changes, new exterior materials) require full review with plans. Submit an application with drawings and material samples. The ACC typically reviews minor projects within 30 days and major projects within 45 days.',
+  },
+  {
+    q: 'If you want to build a new home...',
+    a: 'New residence construction requires a two-phase approval. Phase 1 is a preliminary design review of your site plan, elevations, and materials — submit early to get feedback before finalizing plans. Phase 2 is a final plan review once construction documents are complete. All designs must comply with the East Meadows Design Guidelines. Construction may not begin until written approval is received.',
+  },
+  {
+    q: 'If you want to remove a tree...',
+    a: 'Removal of any tree with a trunk diameter greater than 6 inches at chest height requires ACC approval. Submit a request describing the tree\'s location, size, and reason for removal (disease, safety hazard, etc.). The ACC may require a certified arborist\'s report. Replacement planting is encouraged and may be required for healthy trees removed for aesthetic reasons.',
+  },
+  {
+    q: 'If you want to change your landscaping...',
+    a: 'Significant landscaping changes — including new hardscape (patios, retaining walls, walkways), water features, or major grading — require ACC approval. Routine maintenance, planting of flowers and shrubs, and lawn replacement do not require approval. When in doubt, reach out to the ACC Coordinator before beginning work.',
+  },
+  {
+    q: 'How long does ACC review take?',
+    a: 'Review timelines depend on project complexity. Minor projects (paint, roofing, landscaping) are typically reviewed within 30 days. Major projects (additions, new construction, significant remodels) may take up to 45 days. The clock starts when a complete application — including all required drawings and documentation — is received. Incomplete submissions will be returned and the timeline restarted.',
+  },
+  {
+    q: 'What fees are associated with ACC review?',
+    a: 'ACC review fees vary by project type and scope. Minor project reviews are typically free. Major remodels and new construction carry a review fee to cover administrative costs. Fees are assessed at the time of application and are non-refundable. Construction inspection fees may also apply. Contact the ACC Coordinator for the current fee schedule.',
+  },
+];
 
-function ProjectsTable({ byStatus, all }: { byStatus?: Record<string, ProjectSummary[]>; all?: ProjectSummary[] }) {
-  const rows = all ?? [];
-  const grouped = byStatus ?? {};
-
-  if (rows.length === 0 && Object.keys(grouped).length === 0) {
-    return <p className="text-sm text-gray-400 py-4">No projects.</p>;
-  }
-
-  return (
-    <table className="w-full text-sm table-fixed">
-      <colgroup>
-        <col className="w-28" />
-        <col className="w-16" />
-        <col className="w-1/4" />
-        <col className="w-1/4" />
-        <col className="w-40" />
-      </colgroup>
-      <thead>
-        <tr className="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
-          <th className="text-left pb-2 font-medium">ID</th>
-          <th className="text-left pb-2 font-medium">Lot</th>
-          <th className="text-left pb-2 font-medium">Owner</th>
-          <th className="text-left pb-2 font-medium">Type</th>
-          <th className="text-left pb-2 font-medium">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {all
-          ? all.map((p) => <ProjectRow key={p.id} project={p} />)
-          : Object.entries(grouped).map(([status, group]) => (
-              <Fragment key={status}>
-                <tr>
-                  <td colSpan={5} className="pt-4 pb-2">
-                    <StatusBadge status={status as ProjectStatus} />
-                  </td>
-                </tr>
-                {group.map((p) => <ProjectRow key={p.id} project={p} />)}
-              </Fragment>
-            ))}
-      </tbody>
-    </table>
-  );
-}
-
-function ProjectRow({ project: p }: { project: ProjectSummary }) {
-  return (
-    <ProjectTableRow id={p.id}>
-      <td className="py-2 font-mono text-xs text-gray-600">{p.id}</td>
-      <td className="py-2 text-gray-700">{p.lot}</td>
-      <td className="py-2 text-gray-900 truncate pr-2">{p.owner}</td>
-      <td className="py-2 text-gray-600">{TYPE_LABELS[p.type] ?? p.type}</td>
-      <td className="py-2"><StatusBadge status={p.status} /></td>
-    </ProjectTableRow>
-  );
-}
-
-export default async function AccPage() {
+export default async function AccPublicPage() {
   const db = getDb();
-  const [projects, deadlines, ledger] = await Promise.all([
-    listProjects({}, db),
-    getDeadlines({ days_ahead: 90 }, db),
-    getFeeLedger(db),
-  ]);
-
-  const activeProjects = projects.filter((p) => p.status !== 'complete');
-  const completedProjects = projects.filter((p) => p.status === 'complete');
-
-  const byStatus = STATUS_ORDER.reduce<Record<string, ProjectSummary[]>>((acc, status) => {
-    const group = activeProjects.filter((p) => p.status === status);
-    if (group.length > 0) acc[status] = group;
-    return acc;
-  }, {});
+  const contacts = await getContacts(db);
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">ACC Management</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Architectural Control Committee</h1>
+        <Link
+          href="/acc/manage"
+          className="text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+        >
+          ACC Management →
+        </Link>
+      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-          <div className="text-3xl font-bold" style={{ color: 'var(--hoa-green)' }}>{activeProjects.length}</div>
-          <div className="text-sm text-gray-500 mt-1">Active Projects</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-          <div className="text-3xl font-bold text-red-600">{deadlines.length}</div>
-          <div className="text-sm text-gray-500 mt-1">Upcoming Deadlines (90d)</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">
-          <div className="text-3xl font-bold text-orange-600">
-            ${ledger.total_outstanding.toLocaleString('en-US', { maximumFractionDigits: 0 })}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <ContactsCard contacts={contacts} showGroup="acc_member" title="Committee Members" />
+
+        <div className="bg-gray-100 rounded-xl border-2 border-gray-300 p-5">
+          <h2 className="text-base font-semibold text-gray-900 mb-4">Documents</h2>
+          <div className="space-y-1">
+            {DOCUMENTS.map(({ icon: Icon, title, description }) => (
+              <div key={title} className="py-2 border-b border-gray-200 last:border-0 flex items-start gap-3">
+                <Icon className="w-4 h-4 mt-0.5 text-gray-400 shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{title}</p>
+                  <p className="text-xs text-gray-500">{description}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <div className="text-sm text-gray-500 mt-1">Outstanding Fees</div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <DeadlineAlerts deadlines={deadlines} />
-        <FeeLedgerCard ledger={ledger} />
+      <h2 className="text-lg font-semibold text-gray-900 mb-4">Common Questions</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {FAQS.map(({ q, a }) => (
+          <div key={q} className="bg-white rounded-xl border border-gray-200 p-5">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">{q}</h3>
+            <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+          </div>
+        ))}
       </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h2 className="text-base font-semibold text-gray-900 mb-4">Active Projects</h2>
-        <ProjectsTable byStatus={byStatus} />
-      </div>
-
-      {completedProjects.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Completed Projects</h2>
-          <ProjectsTable all={completedProjects} />
-        </div>
-      )}
     </div>
   );
 }
