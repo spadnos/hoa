@@ -1,16 +1,9 @@
 ---
 acc_members:
-  - name: (ACC Chair)
-    role: Chair
-    email: ''
-    phone: ''
-  - name: (ACC Member)
-    role: Member
-    email: ''
-    phone: ''
   - name: Steve Padnos
     role: Member
     email: spadnos@gmail.com
+    phone: 408-981-1595
   - name: Lisa Hodgson
     role: Member
     email: lisahodgson1231@gmail.com
@@ -20,18 +13,26 @@ acc_members:
   - name: Christian Bastoul
     role: Member
     email: chrbas@outlook.com
+  - name: Kathy Beyer
+    role: Coordinator
+    email: kbeyer@kirkwoodcp.com
+    phone: (209) 753-0244
 board_members:
-  - name: (President)
+  - name: Catherine Elmasian
     role: President
-    email: ''
-    phone: ''
-  - name: (Treasurer)
+    email: ccelmasian@sbcglobal.net
+    phone: 916-804-1039
+  - name: Andrew Coleman
+    role: Vice President
+    email: andrewjcoleman@gmail.com
+  - name: Michael Littleton
     role: Treasurer
-    email: ''
-    phone: ''
-  - name: (Secretary)
+    email: michaellittleon88@gmail.com
+  - name: Frank Pedroncelli
     role: Secretary
-    email: ''
-    phone: ''
+    email: FCPedroncelli@gmail.com
+  - name: Richard Kettles
+    role: Snow Removal Liaison
+    email: rkettles@att.net
 ---
 
