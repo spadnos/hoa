@@ -7,6 +7,17 @@ interface Message {
   content: string;
 }
 
+interface ChatSession {
+  id: string;
+  label: string;
+}
+
+const PLACEHOLDER_HISTORY: ChatSession[] = [
+  { id: '1', label: 'Fee schedule for 2025' },
+  { id: '2', label: 'Pool project timeline' },
+  { id: '3', label: 'ACC approval process' },
+];
+
 function parseMarkdown(text: string): string {
   return text
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -24,6 +35,12 @@ export default function ChatPage() {
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  function startNewChat() {
+    setMessages([]);
+    setInput('');
+    setIsStreaming(false);
+  }
 
   async function sendMessage() {
     const text = input.trim();
@@ -98,48 +115,80 @@ export default function ChatPage() {
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-120px)]">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">HOA Assistant</h1>
-      <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 p-4 space-y-4 mb-4">
-        {messages.length === 0 && (
-          <p className="text-sm text-gray-400 text-center mt-8">
-            Ask about projects, fees, deadlines, contacts, or anything HOA-related.
-          </p>
-        )}
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div
-              className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm leading-relaxed ${
-                msg.role === 'user'
-                  ? 'text-white'
-                  : 'bg-gray-100 text-gray-900'
-              }`}
-              style={msg.role === 'user' ? { backgroundColor: 'var(--hoa-green)' } : undefined}
-              dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) || (isStreaming && i === messages.length - 1 ? '<span class="opacity-50">…</span>' : '') }}
-            />
-          </div>
-        ))}
-        <div ref={bottomRef} />
-      </div>
-      <div className="flex gap-3">
-        <textarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          rows={2}
-          placeholder="Ask a question… (Enter to send, Shift+Enter for newline)"
-          className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-          style={{ '--tw-ring-color': 'var(--hoa-green)' } as React.CSSProperties}
-          disabled={isStreaming}
-        />
+    <div className="flex gap-4 h-[calc(100vh-120px)]">
+      {/* Sidebar */}
+      <div className="w-56 shrink-0 flex flex-col gap-3">
         <button
-          onClick={sendMessage}
-          disabled={isStreaming || !input.trim()}
-          className="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-opacity disabled:opacity-40"
+          onClick={startNewChat}
+          className="w-full px-4 py-2.5 rounded-xl text-white text-sm font-medium flex items-center gap-2 transition-opacity hover:opacity-90"
           style={{ backgroundColor: 'var(--hoa-green)' }}
         >
-          {isStreaming ? '…' : 'Send'}
+          <span className="text-lg leading-none">+</span>
+          New Chat
         </button>
+
+        <div className="flex-1 overflow-y-auto">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 px-1">Recent</p>
+          <ul className="space-y-1">
+            {PLACEHOLDER_HISTORY.map((session) => (
+              <li key={session.id}>
+                <button
+                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 truncate transition-colors"
+                  title={session.label}
+                  disabled
+                >
+                  {session.label}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+
+      {/* Chat area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        <h1 className="text-2xl font-bold text-gray-900 mb-4">HOA Assistant</h1>
+        <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200 p-4 space-y-4 mb-4">
+          {messages.length === 0 && (
+            <p className="text-sm text-gray-400 text-center mt-8">
+              Ask about projects, fees, deadlines, contacts, or anything HOA-related.
+            </p>
+          )}
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div
+                className={`max-w-[80%] rounded-xl px-4 py-2.5 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'text-white'
+                    : 'bg-gray-100 text-gray-900'
+                }`}
+                style={msg.role === 'user' ? { backgroundColor: 'var(--hoa-green)' } : undefined}
+                dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) || (isStreaming && i === messages.length - 1 ? '<span class="opacity-50">…</span>' : '') }}
+              />
+            </div>
+          ))}
+          <div ref={bottomRef} />
+        </div>
+        <div className="flex gap-3">
+          <textarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            rows={2}
+            placeholder="Ask a question… (Enter to send, Shift+Enter for newline)"
+            className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+            style={{ '--tw-ring-color': 'var(--hoa-green)' } as React.CSSProperties}
+            disabled={isStreaming}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={isStreaming || !input.trim()}
+            className="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-opacity disabled:opacity-40"
+            style={{ backgroundColor: 'var(--hoa-green)' }}
+          >
+            {isStreaming ? '…' : 'Send'}
+          </button>
+        </div>
       </div>
     </div>
   );
