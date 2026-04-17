@@ -28,7 +28,7 @@ export interface GetMembersInput {
 
 interface MemberRow {
   id: number;
-  lot: number;
+  lot_number: number;
   name: string;
   role: string;
   is_primary_contact: number;
@@ -40,25 +40,39 @@ interface MemberRow {
 }
 
 export async function getMembers(input: GetMembersInput, db: Db): Promise<Member[]> {
-  let sql = `SELECT id, lot, name, role, is_primary_contact, email, phone, mailing_address, notes, created_at
-             FROM members WHERE organization_id = 'emhoa'`;
+  let sql = `
+    SELECT p.id, l.lot_number as lot, p.name, la.role, la.is_primary_contact,
+           p.email, p.phone, la.mailing_address, p.notes, p.created_at
+    FROM lot_associations la
+    JOIN parties p ON p.id = la.party_id
+    JOIN lots l ON l.id = la.lot_id
+    WHERE l.organization_id = 'emhoa' AND la.end_date IS NULL
+      AND la.role IN ('owner', 'resident')`;
   const params: unknown[] = [];
 
   if (input.lot !== undefined) {
-    sql += ' AND lot = ?';
+    sql += ' AND l.lot_number = ?';
     params.push(input.lot);
   }
   if (input.role) {
-    sql += ' AND role = ?';
-    params.push(input.role);
+    const dbRole = input.role === 'legal_owner' ? 'owner' : 'resident';
+    sql += ' AND la.role = ?';
+    params.push(dbRole);
   }
 
-  sql += ' ORDER BY lot, role, id';
+  sql += ' ORDER BY l.lot_number, la.role, p.id';
 
   const rows = db.prepare(sql).all(...params) as MemberRow[];
   return rows.map((r) => ({
-    ...r,
-    role: r.role as Member['role'],
+    id: r.id,
+    lot: r.lot_number,
+    name: r.name,
+    role: (r.role === 'owner' ? 'legal_owner' : 'resident') as Member['role'],
     is_primary_contact: r.is_primary_contact === 1,
+    email: r.email,
+    phone: r.phone,
+    mailing_address: r.mailing_address,
+    notes: r.notes,
+    created_at: r.created_at,
   }));
 }

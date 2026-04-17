@@ -96,8 +96,81 @@ export interface ProjectDocument {
   uploaded_at: string;
 }
 
+export type LotAssociationRole = 'owner' | 'resident' | 'trustee' | 'corporate_owner';
+export type OrgType = 'management' | 'utility' | 'vendor' | 'government' | 'other';
+
+export interface Party {
+  id: number;
+  organization_id: string;
+  type: 'person' | 'organization';
+  name: string;
+  email: string | null;
+  phone: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface PartyOrg {
+  party_id: number;
+  org_type: OrgType;
+  website: string | null;
+}
+
+export interface Lot {
+  id: number;
+  organization_id: string;
+  lot_number: number;
+  notes: string | null;
+}
+
+export interface LotAddress {
+  id: number;
+  lot_id: number;
+  address: string;
+  unit: string | null;
+}
+
+export interface LotAssociation {
+  id: number;
+  lot_id: number;
+  lot_address_id: number | null;
+  party_id: number;
+  role: LotAssociationRole;
+  is_primary_contact: boolean;
+  mailing_address: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface GroupMembership {
+  id: number;
+  party_id: number;
+  group_name: string;
+  title: string | null;
+  start_date: string | null;
+  end_date: string | null;
+}
+
+export interface PartyAffiliation {
+  id: number;
+  person_party_id: number;
+  org_party_id: number;
+  title: string | null;
+}
+
+export interface DirectoryParty extends Party {
+  org_type?: OrgType;
+  website?: string | null;
+  lot_associations: Array<LotAssociation & { lot_number: number; address: string | null; unit: string | null }>;
+  current_memberships: GroupMembership[];
+  affiliations: Array<PartyAffiliation & { org_name: string }>;
+  affiliated_persons: Array<PartyAffiliation & { person: Party }>;
+}
+
+/** @deprecated Use Party-based types instead */
 export type MemberRole = 'legal_owner' | 'resident';
 
+/** @deprecated Use Party-based types instead */
 export interface Member {
   id: number;
   lot: number;

@@ -62,26 +62,44 @@ export async function getDeadlines(
   today.setHours(0, 0, 0, 0);
   const cutoff = addDays(today, daysAhead);
 
-  let sql = `SELECT * FROM projects WHERE organization_id = 'emhoa'`;
+  interface DeadlineRow {
+    id: string;
+    lot_number: number;
+    owner_name: string | null;
+    status: string;
+    preliminary_approved_at: string | null;
+    final_approved_at: string | null;
+    construction_started_at: string | null;
+    owner_notified_complete_at: string | null;
+  }
+
+  let sql = `
+    SELECT p.id, l.lot_number, op.name as owner_name, p.status,
+           p.preliminary_approved_at, p.final_approved_at,
+           p.construction_started_at, p.owner_notified_complete_at
+    FROM projects p
+    JOIN lots l ON l.id = p.lot_id
+    LEFT JOIN parties op ON op.id = p.owner_party_id
+    WHERE p.organization_id = 'emhoa'`;
   const params: unknown[] = [];
   if (input.project_id) {
-    sql += ' AND id = ?';
+    sql += ' AND p.id = ?';
     params.push(input.project_id);
   }
 
-  const projects = db.prepare(sql).all(...params) as ProjectRow[];
+  const projects = db.prepare(sql).all(...params) as DeadlineRow[];
   const deadlines: Deadline[] = [];
 
   function maybeAdd(
-    project: ProjectRow,
+    project: DeadlineRow,
     type: string,
     deadline: Date
   ): void {
     if (deadline >= today && deadline <= cutoff) {
       deadlines.push({
         project_id: project.id,
-        lot: project.lot,
-        owner: project.owner_name,
+        lot: project.lot_number,
+        owner: project.owner_name ?? 'Unknown',
         type,
         date: formatDate(deadline),
         days_remaining: daysBetween(today, deadline),

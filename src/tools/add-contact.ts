@@ -1,5 +1,6 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import type { Db } from '../db';
+import { getOrCreateParty, addGroupMembership } from './manage-parties';
 
 export const addContactTool: Tool = {
   name: 'add_contact',
@@ -36,23 +37,29 @@ export async function addContact(
   input: AddContactInput,
   db: Db
 ): Promise<{ section: string; name: string } | string> {
-  const groupName = input.section === 'acc' ? 'acc_member' : 'board_member';
+  const groupName = input.section === 'acc' ? 'acc' : 'board';
 
   const existing = db
     .prepare(
-      `SELECT id FROM contacts
-       WHERE organization_id = 'emhoa' AND group_name = ? AND LOWER(name) = LOWER(?)`
+      `SELECT gm.id FROM group_memberships gm
+       JOIN parties p ON p.id = gm.party_id
+       WHERE p.organization_id = 'emhoa'
+         AND gm.group_name = ?
+         AND LOWER(p.name) = LOWER(?)
+         AND gm.end_date IS NULL`
     )
     .get(groupName, input.name);
 
   if (existing) {
-    return `Contact "${input.name}" already exists in ${groupName}s`;
+    return `Contact "${input.name}" already exists in ${groupName} members`;
   }
 
-  db.prepare(
-    `INSERT INTO contacts (organization_id, name, role, group_name, email, phone)
-     VALUES ('emhoa', ?, ?, ?, ?, ?)`
-  ).run(input.name, input.role, groupName, input.email ?? null, input.phone ?? null);
+  const partyId = getOrCreateParty(
+    { name: input.name, email: input.email, phone: input.phone },
+    db
+  );
+
+  addGroupMembership({ party_id: partyId, group_name: groupName, title: input.role }, db);
 
   return { section: input.section, name: input.name };
 }

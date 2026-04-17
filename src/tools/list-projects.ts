@@ -33,38 +33,42 @@ export interface ListProjectsInput {
 
 interface SummaryRow {
   id: string;
-  lot: number;
-  owner_name: string;
+  lot_number: number;
+  owner_name: string | null;
   type: ProjectType;
   status: ProjectStatus;
 }
 
 export async function listProjects(input: ListProjectsInput, db: Db): Promise<ProjectSummary[]> {
-  let sql =
-    'SELECT id, lot, owner_name, type, status FROM projects WHERE organization_id = ?';
+  let sql = `
+    SELECT p.id, l.lot_number, op.name as owner_name, p.type, p.status
+    FROM projects p
+    JOIN lots l ON l.id = p.lot_id
+    LEFT JOIN parties op ON op.id = p.owner_party_id
+    WHERE p.organization_id = ?`;
   const params: unknown[] = ['emhoa'];
 
   if (input.status) {
-    sql += ' AND status = ?';
+    sql += ' AND p.status = ?';
     params.push(input.status);
   }
   if (input.type) {
-    sql += ' AND type = ?';
+    sql += ' AND p.type = ?';
     params.push(input.type);
   }
   if (input.lot !== undefined) {
-    sql += ' AND lot = ?';
+    sql += ' AND l.lot_number = ?';
     params.push(input.lot);
   }
 
-  sql += ' ORDER BY id';
+  sql += ' ORDER BY p.id';
 
   const rows = db.prepare(sql).all(...params) as SummaryRow[];
 
   return rows.map((row) => ({
     id: row.id,
-    lot: row.lot,
-    owner: row.owner_name,
+    lot: row.lot_number,
+    owner: row.owner_name ?? 'Unknown',
     type: row.type,
     status: row.status,
   }));

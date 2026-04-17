@@ -18,17 +18,37 @@ export interface GetProjectInput {
   id: string;
 }
 
+const PROJECT_JOIN_SQL = `
+  SELECT
+    p.*,
+    l.lot_number,
+    la_addr.address as lot_address,
+    la_addr.unit as lot_address_unit,
+    op.name as owner_name, op.email as owner_email, op.phone as owner_phone,
+    la_assoc.mailing_address as owner_mailing_address,
+    dp.name as designer_name, dp.email as designer_email, dp.phone as designer_phone, dp.notes as designer_notes,
+    cp.name as contractor_name, cp.email as contractor_email, cp.phone as contractor_phone, cp.notes as contractor_notes
+  FROM projects p
+  JOIN lots l ON l.id = p.lot_id
+  LEFT JOIN lot_addresses la_addr ON la_addr.id = p.lot_address_id
+  LEFT JOIN parties op ON op.id = p.owner_party_id
+  LEFT JOIN lot_associations la_assoc ON la_assoc.party_id = p.owner_party_id
+    AND la_assoc.lot_id = p.lot_id AND la_assoc.end_date IS NULL
+  LEFT JOIN parties dp ON dp.id = p.designer_party_id
+  LEFT JOIN parties cp ON cp.id = p.contractor_party_id
+`;
+
 export function rowToProject(row: ProjectRow, fees: FeeRow[]): Project {
-  const owner: ContactInfo = { name: row.owner_name };
+  const owner: ContactInfo = { name: row.owner_name ?? 'Unknown' };
   if (row.owner_email) owner.email = row.owner_email;
   if (row.owner_phone) owner.phone = row.owner_phone;
-  if (row.owner_lot_address) owner.lot_address = row.owner_lot_address;
+  if (row.lot_address) owner.lot_address = row.lot_address;
   if (row.owner_mailing_address) owner.mailing_address = row.owner_mailing_address;
 
   const project: Project = {
     id: row.id,
-    lot: row.lot,
-    address: row.address,
+    lot: row.lot_number,
+    address: row.lot_address ?? '',
     type: row.type as ProjectType,
     status: row.status as ProjectStatus,
     submitted: row.submitted,
@@ -54,7 +74,7 @@ export function rowToProject(row: ProjectRow, fees: FeeRow[]): Project {
     const designer: ContactInfo = { name: row.designer_name };
     if (row.designer_email) designer.email = row.designer_email;
     if (row.designer_phone) designer.phone = row.designer_phone;
-    if (row.designer_company) designer.company = row.designer_company;
+    if (row.designer_notes) designer.company = row.designer_notes.replace(/^Company: /, '');
     project.designer = designer;
   }
 
@@ -62,7 +82,7 @@ export function rowToProject(row: ProjectRow, fees: FeeRow[]): Project {
     const contractor: ContactInfo = { name: row.contractor_name };
     if (row.contractor_email) contractor.email = row.contractor_email;
     if (row.contractor_phone) contractor.phone = row.contractor_phone;
-    if (row.contractor_company) contractor.company = row.contractor_company;
+    if (row.contractor_notes) contractor.company = row.contractor_notes.replace(/^Company: /, '');
     project.contractor = contractor;
   }
 
@@ -74,7 +94,7 @@ export async function getProject(
   db: Db
 ): Promise<Project | string> {
   const row = db
-    .prepare(`SELECT * FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
+    .prepare(`${PROJECT_JOIN_SQL} WHERE p.id = ? AND p.organization_id = 'emhoa'`)
     .get(input.id) as ProjectRow | undefined;
 
   if (!row) return `Project ${input.id} not found`;
@@ -85,3 +105,5 @@ export async function getProject(
 
   return rowToProject(row, fees);
 }
+
+export { PROJECT_JOIN_SQL };

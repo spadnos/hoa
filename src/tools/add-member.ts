@@ -1,5 +1,6 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import type { Db } from '../db';
+import { getOrCreateParty, addLotAssociation } from './manage-parties';
 
 export const addMemberTool: Tool = {
   name: 'add_member',
@@ -39,21 +40,21 @@ export interface AddMemberInput {
 }
 
 export async function addMember(input: AddMemberInput, db: Db): Promise<{ id: number; message: string }> {
-  const result = db
-    .prepare(
-      `INSERT INTO members (organization_id, lot, name, role, is_primary_contact, email, phone, mailing_address, notes)
-       VALUES ('emhoa', ?, ?, ?, ?, ?, ?, ?, ?)`
-    )
-    .run(
-      input.lot,
-      input.name,
-      input.role,
-      input.is_primary_contact ? 1 : 0,
-      input.email ?? null,
-      input.phone ?? null,
-      input.mailing_address ?? null,
-      input.notes ?? null
-    );
+  const partyId = getOrCreateParty(
+    { name: input.name, email: input.email, phone: input.phone, notes: input.notes },
+    db
+  );
 
-  return { id: result.lastInsertRowid as number, message: `Added ${input.role} "${input.name}" for lot ${input.lot}` };
+  const assoc = addLotAssociation(
+    {
+      lot_number: input.lot,
+      party_id: partyId,
+      role: input.role === 'legal_owner' ? 'owner' : 'resident',
+      is_primary_contact: input.is_primary_contact ?? false,
+      mailing_address: input.mailing_address,
+    },
+    db
+  );
+
+  return { id: partyId, message: `Added ${input.role} "${input.name}" for lot ${input.lot}` };
 }

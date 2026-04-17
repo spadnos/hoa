@@ -3,11 +3,12 @@ import type { Db } from '../db';
 
 export const removeMemberTool: Tool = {
   name: 'remove_member',
-  description: 'Remove a member record from the HOA directory by ID.',
+  description: 'End a member\'s association with a lot (soft delete — preserves history). Provide the party ID and optionally the lot number.',
   input_schema: {
     type: 'object' as const,
     properties: {
-      id: { type: 'number', description: 'Member record ID to remove' },
+      id: { type: 'number', description: 'Party ID to remove' },
+      lot: { type: 'number', description: 'Lot number to end association for (optional; ends all lot associations if omitted)' },
     },
     required: ['id'],
   },
@@ -15,13 +16,22 @@ export const removeMemberTool: Tool = {
 
 export interface RemoveMemberInput {
   id: number;
+  lot?: number;
 }
 
 export async function removeMember(input: RemoveMemberInput, db: Db): Promise<{ message: string }> {
-  const result = db
-    .prepare(`DELETE FROM members WHERE id = ? AND organization_id = 'emhoa'`)
-    .run(input.id);
+  const today = new Date().toISOString().split('T')[0];
 
-  if (result.changes === 0) return { message: `No member found with ID ${input.id}` };
-  return { message: `Removed member ${input.id}` };
+  let sql = `UPDATE lot_associations SET end_date = ? WHERE party_id = ? AND end_date IS NULL`;
+  const params: unknown[] = [today, input.id];
+
+  if (input.lot !== undefined) {
+    sql += ` AND lot_id = (SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?)`;
+    params.push(input.lot);
+  }
+
+  const result = db.prepare(sql).run(...params);
+
+  if (result.changes === 0) return { message: `No active lot association found for party ${input.id}` };
+  return { message: `Ended lot association for party ${input.id}` };
 }

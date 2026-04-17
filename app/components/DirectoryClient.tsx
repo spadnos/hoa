@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useMemo } from 'react';
+import Link from 'next/link';
 import { Search } from 'lucide-react';
+import type { OrgType } from '@/src/types';
 
 export interface DirectoryEntry {
   key: string;
+  id: number;
   name: string;
   email: string | null;
   phone: string | null;
@@ -13,6 +16,8 @@ export interface DirectoryEntry {
   is_primary_contact: boolean;
   labels: string[];
   committee_role: string | null;
+  party_type: 'person' | 'organization';
+  org_type?: OrgType;
 }
 
 const LABEL_STYLES: Record<string, string> = {
@@ -20,13 +25,20 @@ const LABEL_STYLES: Record<string, string> = {
   'Resident': 'bg-blue-50 text-blue-700',
   'ACC Member': 'bg-amber-50 text-amber-700',
   'Board Member': 'bg-purple-50 text-purple-700',
+  'Management': 'bg-orange-50 text-orange-700',
+  'Utility': 'bg-cyan-50 text-cyan-700',
+  'Vendor': 'bg-gray-100 text-gray-600',
+  'Trustee': 'bg-emerald-50 text-emerald-700',
 };
 
-const LABEL_ORDER = ['Legal Owner', 'Resident', 'ACC Member', 'Board Member'];
+const LABEL_ORDER = ['Legal Owner', 'Resident', 'Trustee', 'ACC Member', 'Board Member', 'Management', 'Utility', 'Vendor'];
 
 function EntryCard({ entry }: { entry: DirectoryEntry }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
+    <Link
+      href={`/directory/party-${entry.id}`}
+      className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
+    >
       <div className="flex items-start justify-between gap-2 mb-1">
         <div>
           <span className="text-sm font-semibold text-gray-900">{entry.name}</span>
@@ -40,6 +52,11 @@ function EntryCard({ entry }: { entry: DirectoryEntry }) {
               Lot {entry.lot}
             </span>
           )}
+          {entry.party_type === 'organization' && entry.org_type && (
+            <span className="text-xs bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded font-medium capitalize">
+              {entry.org_type}
+            </span>
+          )}
           {entry.is_primary_contact && (
             <span className="text-xs bg-blue-50 text-blue-600 px-1.5 py-0.5 rounded">Primary</span>
           )}
@@ -48,9 +65,12 @@ function EntryCard({ entry }: { entry: DirectoryEntry }) {
 
       <div className="space-y-0.5 mb-3">
         {entry.email ? (
-          <a href={`mailto:${entry.email}`} className="block text-xs text-blue-600 hover:underline">
+          <span
+            className="block text-xs text-blue-600"
+            onClick={(e) => { e.preventDefault(); window.location.href = `mailto:${entry.email}`; }}
+          >
             {entry.email}
-          </a>
+          </span>
         ) : null}
         {entry.phone ? (
           <p className="text-xs text-gray-500">{entry.phone}</p>
@@ -72,7 +92,7 @@ function EntryCard({ entry }: { entry: DirectoryEntry }) {
           ))}
         </div>
       )}
-    </div>
+    </Link>
   );
 }
 

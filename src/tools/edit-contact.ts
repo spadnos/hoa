@@ -42,41 +42,36 @@ export async function editContact(
   input: EditContactInput,
   db: Db
 ): Promise<{ section: string; name: string } | string> {
-  const groupName = input.section === 'acc' ? 'acc_member' : 'board_member';
+  const groupName = input.section === 'acc' ? 'acc' : 'board';
 
   const row = db
     .prepare(
-      `SELECT id FROM contacts
-       WHERE organization_id = 'emhoa' AND group_name = ? AND LOWER(name) = LOWER(?)`
+      `SELECT p.id as party_id, gm.id as membership_id
+       FROM group_memberships gm
+       JOIN parties p ON p.id = gm.party_id
+       WHERE p.organization_id = 'emhoa'
+         AND gm.group_name = ?
+         AND LOWER(p.name) = LOWER(?)
+         AND gm.end_date IS NULL`
     )
-    .get(groupName, input.name) as { id: number } | undefined;
+    .get(groupName, input.name) as { party_id: number; membership_id: number } | undefined;
 
-  if (!row) return `Contact "${input.name}" not found in ${groupName}s`;
+  if (!row) return `Contact "${input.name}" not found in ${groupName} members`;
 
   const { name, role, email, phone } = input.fields;
-  const sets: string[] = [];
-  const values: unknown[] = [];
 
-  if (name !== undefined) {
-    sets.push('name = ?');
-    values.push(name);
+  if (name !== undefined || email !== undefined || phone !== undefined) {
+    const sets: string[] = [];
+    const values: unknown[] = [];
+    if (name !== undefined) { sets.push('name = ?'); values.push(name); }
+    if (email !== undefined) { sets.push('email = ?'); values.push(email); }
+    if (phone !== undefined) { sets.push('phone = ?'); values.push(phone); }
+    values.push(row.party_id);
+    db.prepare(`UPDATE parties SET ${sets.join(', ')} WHERE id = ?`).run(...values);
   }
+
   if (role !== undefined) {
-    sets.push('role = ?');
-    values.push(role);
-  }
-  if (email !== undefined) {
-    sets.push('email = ?');
-    values.push(email);
-  }
-  if (phone !== undefined) {
-    sets.push('phone = ?');
-    values.push(phone);
-  }
-
-  if (sets.length > 0) {
-    values.push(row.id);
-    db.prepare(`UPDATE contacts SET ${sets.join(', ')} WHERE id = ?`).run(...values);
+    db.prepare(`UPDATE group_memberships SET title = ? WHERE id = ?`).run(role, row.membership_id);
   }
 
   const finalName = (input.fields.name ?? input.name) as string;

@@ -11,6 +11,7 @@ const MIGRATIONS = [
   { version: 4, file: '004_inspections.sql' },
   { version: 5, file: '005_project_documents.sql' },
   { version: 6, file: '006_members.sql' },
+  { version: 7, file: '007_directory_schema.sql' },
 ];
 
 export function createDb(dbPath: string): Db {
@@ -35,8 +36,14 @@ function runMigrations(db: Db): void {
   for (const { version, file } of MIGRATIONS) {
     if (!applied.has(version)) {
       const sql = fs.readFileSync(path.join(migrationsDir, file), 'utf-8');
-      db.exec(sql);
-      db.prepare('INSERT INTO _schema_version (version) VALUES (?)').run(version);
+      const needsFkOff = sql.trimStart().startsWith('-- requires-fk-off');
+      if (needsFkOff) db.pragma('foreign_keys = OFF');
+      try {
+        db.exec(sql);
+        db.prepare('INSERT INTO _schema_version (version) VALUES (?)').run(version);
+      } finally {
+        if (needsFkOff) db.pragma('foreign_keys = ON');
+      }
     }
   }
 }
@@ -53,29 +60,37 @@ export function getDb(): Db {
 export interface ProjectRow {
   id: string;
   organization_id: string;
-  lot: number;
-  address: string;
+  lot_id: number;
+  lot_address_id: number | null;
   type: string;
   status: string;
   submitted: string;
   notes: string | null;
-  owner_name: string;
+  owner_party_id: number | null;
+  designer_party_id: number | null;
+  contractor_party_id: number | null;
+  // Joined from lots, lot_addresses, parties:
+  lot_number: number;
+  lot_address: string | null;
+  lot_address_unit: string | null;
+  owner_name: string | null;
   owner_email: string | null;
   owner_phone: string | null;
-  owner_lot_address: string | null;
   owner_mailing_address: string | null;
   designer_name: string | null;
   designer_email: string | null;
   designer_phone: string | null;
-  designer_company: string | null;
+  designer_notes: string | null;
   contractor_name: string | null;
   contractor_email: string | null;
   contractor_phone: string | null;
-  contractor_company: string | null;
+  contractor_notes: string | null;
   preliminary_approved_at: string | null;
   final_approved_at: string | null;
   construction_started_at: string | null;
   owner_notified_complete_at: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface FeeRow {

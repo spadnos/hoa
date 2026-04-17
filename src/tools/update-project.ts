@@ -7,7 +7,7 @@ export const updateProjectTool: Tool = {
   description:
     'Update fields on an existing project. Use this to change status, mark fees as paid, update notes, or update contact information. ' +
     'Pass the full fees array when updating fee records. ' +
-    'Contact fields are nested objects: owner (name, email, phone, lot_address, mailing_address), ' +
+    'Contact fields are nested objects: owner (name, email, phone, mailing_address), ' +
     'designer (name, company, email, phone), contractor (name, company, email, phone). ' +
     'To add or update a designer or contractor, pass the full contact object in the fields. ' +
     'Deadline date fields (preliminary_approved_at, final_approved_at, construction_started_at, owner_notified_complete_at) are ISO date strings.',
@@ -35,18 +35,16 @@ export async function updateProject(
   db: Db
 ): Promise<{ id: string } | string> {
   const existing = db
-    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(input.id);
+    .prepare(`SELECT id, owner_party_id, designer_party_id, contractor_party_id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
+    .get(input.id) as { id: string; owner_party_id: number | null; designer_party_id: number | null; contractor_party_id: number | null } | undefined;
   if (!existing) return `Project ${input.id} not found`;
 
   const { fees, owner, designer, contractor, ...rest } = input.fields;
 
-  const cols: Record<string, unknown> = {};
-
+  const projectCols: Record<string, unknown> = {};
   const SCALAR_FIELDS = [
     'status',
     'notes',
-    'address',
     'submitted',
     'type',
     'preliminary_approved_at',
@@ -57,52 +55,68 @@ export async function updateProject(
 
   for (const key of SCALAR_FIELDS) {
     if (key in rest && rest[key] !== undefined) {
-      cols[key] = rest[key];
+      projectCols[key] = rest[key];
     }
   }
 
-  if (owner) {
-    if (owner.name !== undefined) cols['owner_name'] = owner.name;
-    if (owner.email !== undefined) cols['owner_email'] = owner.email;
-    if (owner.phone !== undefined) cols['owner_phone'] = owner.phone;
-    if (owner.lot_address !== undefined) cols['owner_lot_address'] = owner.lot_address;
-    if (owner.mailing_address !== undefined) cols['owner_mailing_address'] = owner.mailing_address;
+  if (Object.keys(projectCols).length > 0) {
+    const setClauses = Object.keys(projectCols).map((k) => `${k} = ?`).join(', ');
+    const values = [...Object.values(projectCols), new Date().toISOString(), input.id];
+    db.prepare(`UPDATE projects SET ${setClauses}, updated_at = ? WHERE id = ?`).run(...values);
+  }
+
+  if (owner && existing.owner_party_id) {
+    const sets: string[] = [];
+    const vals: unknown[] = [];
+    if (owner.name !== undefined) { sets.push('name = ?'); vals.push(owner.name); }
+    if (owner.email !== undefined) { sets.push('email = ?'); vals.push(owner.email); }
+    if (owner.phone !== undefined) { sets.push('phone = ?'); vals.push(owner.phone); }
+    if (sets.length > 0) {
+      vals.push(existing.owner_party_id);
+      db.prepare(`UPDATE parties SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+    }
+    if (owner.mailing_address !== undefined) {
+      db.prepare(
+        `UPDATE lot_associations SET mailing_address = ?
+         WHERE party_id = ? AND end_date IS NULL`
+      ).run(owner.mailing_address, existing.owner_party_id);
+    }
   }
 
   if (designer !== undefined) {
     if (designer === null) {
-      cols['designer_name'] = null;
-      cols['designer_email'] = null;
-      cols['designer_phone'] = null;
-      cols['designer_company'] = null;
-    } else {
-      if (designer.name !== undefined) cols['designer_name'] = designer.name;
-      if (designer.email !== undefined) cols['designer_email'] = designer.email;
-      if (designer.phone !== undefined) cols['designer_phone'] = designer.phone;
-      if (designer.company !== undefined) cols['designer_company'] = designer.company;
+      db.prepare(`UPDATE projects SET designer_party_id = NULL, updated_at = ? WHERE id = ?`)
+        .run(new Date().toISOString(), input.id);
+    } else if (existing.designer_party_id) {
+      const sets: string[] = [];
+      const vals: unknown[] = [];
+      if (designer.name !== undefined) { sets.push('name = ?'); vals.push(designer.name); }
+      if (designer.email !== undefined) { sets.push('email = ?'); vals.push(designer.email); }
+      if (designer.phone !== undefined) { sets.push('phone = ?'); vals.push(designer.phone); }
+      if (designer.company !== undefined) { sets.push('notes = ?'); vals.push(`Company: ${designer.company}`); }
+      if (sets.length > 0) {
+        vals.push(existing.designer_party_id);
+        db.prepare(`UPDATE parties SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+      }
     }
   }
 
   if (contractor !== undefined) {
     if (contractor === null) {
-      cols['contractor_name'] = null;
-      cols['contractor_email'] = null;
-      cols['contractor_phone'] = null;
-      cols['contractor_company'] = null;
-    } else {
-      if (contractor.name !== undefined) cols['contractor_name'] = contractor.name;
-      if (contractor.email !== undefined) cols['contractor_email'] = contractor.email;
-      if (contractor.phone !== undefined) cols['contractor_phone'] = contractor.phone;
-      if (contractor.company !== undefined) cols['contractor_company'] = contractor.company;
+      db.prepare(`UPDATE projects SET contractor_party_id = NULL, updated_at = ? WHERE id = ?`)
+        .run(new Date().toISOString(), input.id);
+    } else if (existing.contractor_party_id) {
+      const sets: string[] = [];
+      const vals: unknown[] = [];
+      if (contractor.name !== undefined) { sets.push('name = ?'); vals.push(contractor.name); }
+      if (contractor.email !== undefined) { sets.push('email = ?'); vals.push(contractor.email); }
+      if (contractor.phone !== undefined) { sets.push('phone = ?'); vals.push(contractor.phone); }
+      if (contractor.company !== undefined) { sets.push('notes = ?'); vals.push(`Company: ${contractor.company}`); }
+      if (sets.length > 0) {
+        vals.push(existing.contractor_party_id);
+        db.prepare(`UPDATE parties SET ${sets.join(', ')} WHERE id = ?`).run(...vals);
+      }
     }
-  }
-
-  if (Object.keys(cols).length > 0) {
-    const setClauses = Object.keys(cols)
-      .map((k) => `${k} = ?`)
-      .join(', ');
-    const values = [...Object.values(cols), new Date().toISOString(), input.id];
-    db.prepare(`UPDATE projects SET ${setClauses}, updated_at = ? WHERE id = ?`).run(...values);
   }
 
   if (fees) {
