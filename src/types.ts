@@ -95,3 +95,18 @@ export interface ProjectDocument {
   description: string | null;
   uploaded_at: string;
 }
+
+export type MemberRole = 'legal_owner' | 'resident';
+
+export interface Member {
+  id: number;
+  lot: number;
+  name: string;
+  role: MemberRole;
+  is_primary_contact: boolean;
+  email: string | null;
+  phone: string | null;
+  mailing_address: string | null;
+  notes: string | null;
+  created_at: string;
+}

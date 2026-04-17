@@ -25,6 +25,10 @@ import {
   listProjectDocuments,
   ListProjectDocumentsInput,
 } from './list-project-documents';
+import { getMembersTool, getMembers, GetMembersInput } from './get-members';
+import { addMemberTool, addMember, AddMemberInput } from './add-member';
+import { editMemberTool, editMember, EditMemberInput } from './edit-member';
+import { removeMemberTool, removeMember, RemoveMemberInput } from './remove-member';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import path from 'path';
 import { getDb } from '../db';
@@ -50,6 +54,10 @@ export function getTools(): Tool[] {
     listInspectionsTool,
     addProjectDocumentTool,
     listProjectDocumentsTool,
+    getMembersTool,
+    addMemberTool,
+    editMemberTool,
+    removeMemberTool,
   ];
 }
 
@@ -102,6 +110,14 @@ export async function executeTool(
       return addProjectDocument(input as unknown as AddProjectDocumentInput, db);
     case 'list_project_documents':
       return listProjectDocuments(input as unknown as ListProjectDocumentsInput, db);
+    case 'get_members':
+      return getMembers(input as unknown as GetMembersInput, db);
+    case 'add_member':
+      return addMember(input as unknown as AddMemberInput, db);
+    case 'edit_member':
+      return editMember(input as unknown as EditMemberInput, db);
+    case 'remove_member':
+      return removeMember(input as unknown as RemoveMemberInput, db);
     default:
       return `Unknown tool: ${name}`;
   }

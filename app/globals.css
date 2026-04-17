@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+:root {
+  --hoa-green: #2c5f2e;
+  --hoa-green-light: #3d7a40;
+  --hoa-green-pale: #e8f5e9;
+}

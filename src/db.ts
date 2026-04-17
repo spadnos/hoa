@@ -10,6 +10,7 @@ const MIGRATIONS = [
   { version: 3, file: '003_conditions.sql' },
   { version: 4, file: '004_inspections.sql' },
   { version: 5, file: '005_project_documents.sql' },
+  { version: 6, file: '006_members.sql' },
 ];
 
 export function createDb(dbPath: string): Db {
@@ -29,7 +30,7 @@ function runMigrations(db: Db): void {
     )
   );
 
-  const migrationsDir = path.join(__dirname, 'migrations');
+  const migrationsDir = path.join(process.cwd(), 'src', 'migrations');
 
   for (const { version, file } of MIGRATIONS) {
     if (!applied.has(version)) {

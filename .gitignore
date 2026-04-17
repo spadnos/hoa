@@ -1,5 +1,9 @@
 node_modules/
 dist/
+.next/
 .env
 *.js.map
 .worktrees/
+emhoa.db
+emhoa.db-shm
+emhoa.db-wal
