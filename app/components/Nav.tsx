@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { logoutAction } from "@/src/auth/actions";
+import type { SessionUser } from "@/src/auth/session";
 
 const links = [
   { href: "/", label: "Home" },
@@ -11,7 +13,11 @@ const links = [
   { href: "/chat", label: "Assistant" },
 ];
 
-export default function Nav() {
+interface NavProps {
+  user: SessionUser | null;
+}
+
+export default function Nav({ user }: NavProps) {
   const pathname = usePathname();
 
   return (
@@ -23,7 +29,7 @@ export default function Nav() {
         <span className="font-bold text-lg tracking-tight">
           East Meadows HOA
         </span>
-        <div className="flex gap-6">
+        <div className="flex gap-6 flex-1">
           {links.map((link) => (
             <Link
               key={link.href}
@@ -39,6 +45,19 @@ export default function Nav() {
             </Link>
           ))}
         </div>
+        {user && (
+          <div className="flex items-center gap-3">
+            <span className="text-sm opacity-80">{user.name}</span>
+            <form action={logoutAction}>
+              <button
+                type="submit"
+                className="text-xs px-3 py-1 rounded border border-white/40 opacity-75 hover:opacity-100 transition-opacity cursor-pointer"
+              >
+                Log out
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </nav>
   );

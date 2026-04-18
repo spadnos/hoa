@@ -1,10 +1,13 @@
 import { Fragment } from 'react';
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { listProjects } from '@/src/tools/list-projects';
 import { getDeadlines } from '@/src/tools/get-deadlines';
 import { getFeeLedger } from '@/src/tools/fee-ledger';
 import { getDb } from '@/src/db';
 import type { ProjectSummary, ProjectStatus } from '@/src/types';
+import { getSession } from '@/src/auth/session';
+import { hasPermission } from '@/src/auth/permissions';
 import StatusBadge from '../../components/StatusBadge';
 import DeadlineAlerts from '../../components/DeadlineAlert';
 import FeeLedgerCard from '../../components/FeeLedgerCard';
@@ -84,6 +87,9 @@ function ProjectRow({ project: p }: { project: ProjectSummary }) {
 }
 
 export default async function AccPage() {
+  const session = await getSession();
+  if (!hasPermission(session, 'acc_manage')) redirect('/');
+
   const db = getDb();
   const [projects, deadlines, ledger] = await Promise.all([
     listProjects({}, db),
