@@ -354,7 +354,7 @@ export default function PartyProfileClient({ party }: { party: DirectoryParty })
             {currentLotAssocs.map((assoc) => (
               <div key={assoc.id} className="flex items-start justify-between py-2 border-b border-gray-100 last:border-0">
                 <div>
-                  <span className="text-sm font-medium text-gray-900">Lot {assoc.lot_number}</span>
+                  <Link href={`/lots/${assoc.lot_id}`} className="text-sm font-medium text-gray-900 hover:underline">Lot {assoc.lot_number}</Link>
                   {assoc.address && <span className="text-xs text-gray-500 ml-2">{assoc.address}{assoc.unit ? ` ${assoc.unit}` : ''}</span>}
                   <div className="flex gap-1 mt-0.5">
                     <Badge variant="outline" className="text-xs capitalize">{assoc.role.replace('_', ' ')}</Badge>

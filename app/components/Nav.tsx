@@ -47,7 +47,9 @@ export default function Nav({ user }: NavProps) {
         </div>
         {user && (
           <div className="flex items-center gap-3">
-            <span className="text-sm opacity-80">{user.name}</span>
+            <Link href={`/directory/party-${user.partyId}`} className="text-sm opacity-80 hover:opacity-100 hover:underline underline-offset-4 transition-opacity">
+              {user.name}
+            </Link>
             <form action={logoutAction}>
               <button
                 type="submit"
