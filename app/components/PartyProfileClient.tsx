@@ -129,7 +129,18 @@ export default function PartyProfileClient({ party }: { party: DirectoryParty })
       body: JSON.stringify(newMembership),
     });
     if (res.ok) {
-      router.refresh();
+      const { id } = await res.json();
+      setMemberships((prev) => [
+        ...prev,
+        {
+          id,
+          party_id: party.id,
+          group_name: newMembership.group_name,
+          title: newMembership.title || null,
+          start_date: newMembership.start_date || null,
+          end_date: null,
+        },
+      ]);
       setShowAddMembership(false);
       setNewMembership({ group_name: 'board', title: '', start_date: '' });
     }

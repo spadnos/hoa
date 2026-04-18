@@ -1,4 +1,5 @@
 import { Fragment } from 'react';
+import Link from 'next/link';
 import { listProjects } from '@/src/tools/list-projects';
 import { getDeadlines } from '@/src/tools/get-deadlines';
 import { getFeeLedger } from '@/src/tools/fee-ledger';
@@ -101,7 +102,16 @@ export default async function AccPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">ACC Management</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">ACC Management</h1>
+        <Link
+          href="/acc/manage/new"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium text-white"
+          style={{ backgroundColor: 'var(--hoa-green)' }}
+        >
+          + New Project
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5 text-center">

@@ -14,7 +14,7 @@ export const getFeeLedgerTool: Tool = {
 interface FeeLedgerRow {
   project_id: string;
   lot: number;
-  owner_name: string;
+  owner_name: string | null;
   project_status: string;
   description: string;
   amount: number;
@@ -39,9 +39,11 @@ export async function getFeeLedger(db: Db): Promise<FeeLedgerResult> {
   const rows = db
     .prepare(
       `SELECT f.description, f.amount, f.due_at,
-              p.id AS project_id, p.lot, p.owner_name, p.status AS project_status
+              p.id AS project_id, l.lot_number AS lot, op.name AS owner_name, p.status AS project_status
        FROM fees f
        JOIN projects p ON p.id = f.project_id
+       JOIN lots l ON l.id = p.lot_id
+       LEFT JOIN parties op ON op.id = p.owner_party_id
        WHERE f.organization_id = 'emhoa' AND f.paid_at IS NULL
        ORDER BY p.id, f.id`
     )
@@ -55,7 +57,7 @@ export async function getFeeLedger(db: Db): Promise<FeeLedgerResult> {
       byProject.set(row.project_id, {
         project_id: row.project_id,
         lot: row.lot,
-        owner: row.owner_name,
+        owner: row.owner_name ?? '',
         status: row.project_status,
         unpaid_fees: [],
         total: 0,

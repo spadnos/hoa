@@ -168,13 +168,19 @@ CREATE TABLE projects_new (
   owner_party_id INTEGER REFERENCES parties(id),
   designer_party_id INTEGER REFERENCES parties(id),
   contractor_party_id INTEGER REFERENCES parties(id),
+  preliminary_approved_at TEXT,
+  final_approved_at TEXT,
+  construction_started_at TEXT,
+  owner_notified_complete_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 
 INSERT INTO projects_new (
   id, organization_id, lot_id, lot_address_id, type, status, submitted, notes,
-  owner_party_id, designer_party_id, contractor_party_id, created_at, updated_at
+  owner_party_id, designer_party_id, contractor_party_id,
+  preliminary_approved_at, final_approved_at, construction_started_at, owner_notified_complete_at,
+  created_at, updated_at
 )
 SELECT
   pr.id,
@@ -215,6 +221,10 @@ SELECT
      AND (p2.email = pr.contractor_email OR (p2.email IS NULL AND pr.contractor_email IS NULL))
      AND p2.type = 'person'
    LIMIT 1) AS contractor_party_id,
+  pr.preliminary_approved_at,
+  pr.final_approved_at,
+  pr.construction_started_at,
+  pr.owner_notified_complete_at,
   pr.created_at,
   pr.updated_at
 FROM projects pr
