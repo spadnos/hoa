@@ -19,19 +19,69 @@ const ROLE_STYLES: Record<string, string> = {
   corporate_owner: 'bg-gray-100 text-gray-600',
 };
 
-function LotCard({ lot }: { lot: LotEntry }) {
+interface AddressCard {
+  lotId: number;
+  lotNumber: number;
+  address: string;
+  unit: string | null;
+  associations: LotEntry['associations'];
+  allAddresses: LotEntry['addresses'];
+}
+
+function deriveCards(lots: LotEntry[]): AddressCard[] {
+  const cards: AddressCard[] = [];
+  for (const lot of lots) {
+    if (lot.addresses.length <= 1) {
+      cards.push({
+        lotId: lot.id,
+        lotNumber: lot.lot_number,
+        address: lot.addresses[0]?.address ?? '',
+        unit: lot.addresses[0]?.unit ?? null,
+        associations: lot.associations,
+        allAddresses: lot.addresses,
+      });
+    } else {
+      for (const addr of lot.addresses) {
+        cards.push({
+          lotId: lot.id,
+          lotNumber: lot.lot_number,
+          address: addr.address,
+          unit: addr.unit,
+          associations: lot.associations.filter(
+            (a) => a.lot_address_id === addr.id || a.lot_address_id === null
+          ),
+          allAddresses: lot.addresses,
+        });
+      }
+    }
+  }
+  return cards;
+}
+
+function LotCard({ card }: { card: AddressCard }) {
   const primaryAssoc =
-    lot.associations.find((a) => a.is_primary_contact) ?? lot.associations[0] ?? null;
-  const firstAddress = lot.addresses[0] ?? null;
-  const extraCount = lot.associations.length - 1;
+    card.associations.find((a) => a.is_primary_contact) ?? card.associations[0] ?? null;
+  const extraCount = card.associations.length - 1;
 
   return (
     <Link
-      href={`/lots/${lot.id}`}
+      href={`/lots/${card.lotId}`}
       className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 hover:shadow-sm transition-all cursor-pointer"
     >
       <div className="flex items-start justify-between gap-2 mb-1">
-        <span className="text-sm font-semibold text-gray-900">Lot {lot.lot_number}</span>
+        <div className="min-w-0">
+          {card.address ? (
+            <>
+              <p className="text-sm font-semibold text-gray-900 truncate">
+                {card.address}
+                {card.unit ? ` #${card.unit}` : ''}
+              </p>
+              <p className="text-xs text-gray-400">Lot {card.lotNumber}</p>
+            </>
+          ) : (
+            <span className="text-sm font-semibold text-gray-900">Lot {card.lotNumber}</span>
+          )}
+        </div>
         <div className="flex gap-1 shrink-0">
           {primaryAssoc && (
             <span
@@ -49,16 +99,10 @@ function LotCard({ lot }: { lot: LotEntry }) {
       </div>
 
       <div className="space-y-0.5">
-        {firstAddress && (
-          <p className="text-xs text-gray-500">
-            {firstAddress.address}
-            {firstAddress.unit ? ` #${firstAddress.unit}` : ''}
-          </p>
-        )}
         {primaryAssoc && (
           <p className="text-xs text-gray-600">{primaryAssoc.name}</p>
         )}
-        {!primaryAssoc && !firstAddress && (
+        {!primaryAssoc && (
           <p className="text-xs text-gray-400 italic">No associations</p>
         )}
       </div>
@@ -76,6 +120,8 @@ export default function LotsClient({ lots }: { lots: LotEntry[] }) {
   const [search, setSearch] = useState('');
   const [activeSection, setActiveSection] = useState<string | null>(null);
 
+  const cards = useMemo(() => deriveCards(lots), [lots]);
+
   const availableSections = useMemo(() => {
     const present = new Set(lots.map((l) => sectionOf(l.lot_number)));
     return SECTIONS.filter((s) => present.has(s));
@@ -83,15 +129,15 @@ export default function LotsClient({ lots }: { lots: LotEntry[] }) {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return lots.filter((l) => {
-      if (activeSection && sectionOf(l.lot_number) !== activeSection) return false;
+    return cards.filter((c) => {
+      if (activeSection && sectionOf(c.lotNumber) !== activeSection) return false;
       if (!q) return true;
-      if (String(l.lot_number).includes(q)) return true;
-      if (l.addresses.some((a) => a.address.toLowerCase().includes(q))) return true;
-      if (l.associations.some((a) => a.name.toLowerCase().includes(q))) return true;
+      if (String(c.lotNumber).includes(q)) return true;
+      if (c.allAddresses.some((a) => a.address.toLowerCase().includes(q))) return true;
+      if (c.associations.some((a) => a.name.toLowerCase().includes(q))) return true;
       return false;
     });
-  }, [lots, search, activeSection]);
+  }, [cards, search, activeSection]);
 
   return (
     <div>
@@ -148,8 +194,8 @@ export default function LotsClient({ lots }: { lots: LotEntry[] }) {
         <p className="text-sm text-gray-400 py-8 text-center">No lots match your search.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filtered.map((lot) => (
-            <LotCard key={lot.id} lot={lot} />
+          {filtered.map((card, i) => (
+            <LotCard key={`${card.lotId}-${card.address}-${i}`} card={card} />
           ))}
         </div>
       )}

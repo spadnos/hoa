@@ -28,6 +28,35 @@ const TYPE_LABELS: Record<string, string> = {
   landscaping: 'Landscaping',
 };
 
+function AssociationsTable({ associations }: { associations: ReturnType<typeof getLotById> extends infer T ? T extends { associations: infer A } ? A : never : never }) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Role</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Primary Contact</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {associations.map((a) => (
+          <TableRow key={a.party_id}>
+            <TableCell className="text-sm">{ROLE_LABELS[a.role] ?? a.role}</TableCell>
+            <TableCell className="text-sm">
+              <Link href={`/directory/party-${a.party_id}`} className="text-blue-600 hover:underline">
+                {a.name}
+              </Link>
+            </TableCell>
+            <TableCell className="text-sm text-gray-500">
+              {a.is_primary_contact ? 'Yes' : '—'}
+            </TableCell>
+          </TableRow>
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
 export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const numId = parseInt(id, 10);
@@ -54,66 +83,53 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
       {!lot.notes && <div className="mb-6" />}
 
       <div className="space-y-5">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Addresses</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {lot.addresses.length === 0 ? (
-              <p className="text-sm text-gray-400">No addresses recorded.</p>
-            ) : (
-              <ul className="space-y-1">
-                {lot.addresses.map((a) => (
-                  <li key={a.id} className="text-sm text-gray-900">
-                    {a.address}
-                    {a.unit ? <span className="text-gray-500"> #{a.unit}</span> : null}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Current Associations</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {lot.associations.length === 0 ? (
-              <p className="text-sm text-gray-400">No current associations.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Primary Contact</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lot.associations.map((a) => (
-                    <TableRow key={a.party_id}>
-                      <TableCell className="text-sm">
-                        {ROLE_LABELS[a.role] ?? a.role}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        <Link
-                          href={`/directory/party-${a.party_id}`}
-                          className="text-blue-600 hover:underline"
-                        >
-                          {a.name}
-                        </Link>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">
-                        {a.is_primary_contact ? 'Yes' : '—'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </CardContent>
-        </Card>
+        {lot.addresses.length === 0 ? (
+          <>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Addresses</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-gray-400">No addresses recorded.</p>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Current Associations</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {lot.associations.length === 0 ? (
+                  <p className="text-sm text-gray-400">No current associations.</p>
+                ) : (
+                  <AssociationsTable associations={lot.associations} />
+                )}
+              </CardContent>
+            </Card>
+          </>
+        ) : (
+          lot.addresses.map((addr) => {
+            const assocs = lot.associations.filter(
+              (a) => a.lot_address_id === addr.id || a.lot_address_id === null
+            );
+            return (
+              <Card key={addr.id}>
+                <CardHeader>
+                  <CardTitle className="text-base">
+                    {addr.address}
+                    {addr.unit ? <span className="font-normal text-gray-500"> #{addr.unit}</span> : null}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {assocs.length === 0 ? (
+                    <p className="text-sm text-gray-400">No current associations.</p>
+                  ) : (
+                    <AssociationsTable associations={assocs} />
+                  )}
+                </CardContent>
+              </Card>
+            );
+          })
+        )}
 
         <Card>
           <CardHeader>
