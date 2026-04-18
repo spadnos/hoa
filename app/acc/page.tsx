@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { FileText, BookOpen, ClipboardList } from 'lucide-react';
 import { getContacts } from '@/src/tools/get-contacts';
 import { getDb } from '@/src/db';
+import { getSession } from '@/src/auth/session';
+import { hasPermission } from '@/src/auth/permissions';
 import ContactsCard from '../components/ContactsCard';
 
 const DOCUMENTS = [
@@ -51,18 +53,20 @@ const FAQS = [
 
 export default async function AccPublicPage() {
   const db = getDb();
-  const contacts = await getContacts(db);
+  const [contacts, session] = await Promise.all([getContacts(db), getSession()]);
 
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Architectural Control Committee</h1>
-        <Link
-          href="/acc/manage"
-          className="text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
-        >
-          ACC Management →
-        </Link>
+        {hasPermission(session, 'acc_manage') && (
+          <Link
+            href="/acc/manage"
+            className="text-sm font-medium px-4 py-2 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+          >
+            ACC Management →
+          </Link>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
