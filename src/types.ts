@@ -27,6 +27,17 @@ export interface ContactInfo {
   company?: string;         // designer/contractor only
   lot_address?: string;     // owner only
   mailing_address?: string; // owner only
+  party_id?: number;        // links to /directory/party-{party_id}
+}
+
+export interface AdditionalContact {
+  id: number;
+  party_id: number;
+  role_label: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  company?: string;
 }
 
 export interface HoaContact {
@@ -58,6 +69,7 @@ export interface Project {
   final_approved_at?: string;
   construction_started_at?: string;
   owner_notified_complete_at?: string;
+  additional_contacts?: AdditionalContact[];
 }
 
 export interface ProjectSummary {

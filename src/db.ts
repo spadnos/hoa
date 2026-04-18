@@ -12,6 +12,8 @@ const MIGRATIONS = [
   { version: 5, file: '005_project_documents.sql' },
   { version: 6, file: '006_members.sql' },
   { version: 7, file: '007_directory_schema.sql' },
+  { version: 8, file: '008_restore_deadline_columns.sql' },
+  { version: 9, file: '009_project_contacts.sql' },
 ];
 
 export function createDb(dbPath: string): Db {

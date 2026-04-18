@@ -3,8 +3,24 @@ import { getDb } from '@/src/db';
 import { getDirectoryParties } from '@/src/tools/get-parties';
 import { createParty } from '@/src/tools/manage-parties';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   const db = getDb();
+  const q = req.nextUrl.searchParams.get('q')?.trim();
+
+  if (q && q.length >= 2) {
+    const rows = db
+      .prepare(
+        `SELECT id, name, email, phone, type, notes
+         FROM parties
+         WHERE organization_id = 'emhoa'
+           AND (name LIKE ? OR email LIKE ?)
+         ORDER BY name
+         LIMIT 20`
+      )
+      .all(`%${q}%`, `%${q}%`);
+    return NextResponse.json(rows);
+  }
+
   const parties = await getDirectoryParties(db);
   return NextResponse.json(parties);
 }

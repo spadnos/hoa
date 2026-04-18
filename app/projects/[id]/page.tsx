@@ -5,7 +5,8 @@ import { getProject } from '@/src/tools/get-project';
 import { listConditions } from '@/src/tools/list-conditions';
 import { listInspections } from '@/src/tools/list-inspections';
 import { listProjectDocuments } from '@/src/tools/list-project-documents';
-import type { ContactInfo, Fee, Condition, Inspection, ProjectDocument, ProjectType } from '@/src/types';
+import type { Fee, Condition, Inspection, ProjectDocument, ProjectType } from '@/src/types';
+import ProjectContactsSection from '@/app/components/ProjectContactsSection';
 import StatusBadge from '@/app/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -52,27 +53,6 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function ContactSection({ title, contact }: { title: string; contact: ContactInfo }) {
-  return (
-    <div>
-      <h3 className="text-sm font-semibold text-gray-700 mb-2">{title}</h3>
-      <div className="pl-2 border-l-2 border-gray-100 space-y-0.5">
-        <p className="text-sm font-medium text-gray-900">{contact.name}</p>
-        {contact.company && <p className="text-sm text-gray-600">{contact.company}</p>}
-        {contact.email && (
-          <a href={`mailto:${contact.email}`} className="text-sm text-blue-600 hover:underline block">
-            {contact.email}
-          </a>
-        )}
-        {contact.phone && <p className="text-sm text-gray-600">{contact.phone}</p>}
-        {contact.lot_address && <p className="text-sm text-gray-500">Lot: {contact.lot_address}</p>}
-        {contact.mailing_address && (
-          <p className="text-sm text-gray-500">Mail: {contact.mailing_address}</p>
-        )}
-      </div>
-    </div>
-  );
-}
 
 function FeesCard({ fees }: { fees: Fee[] }) {
   const totalOwed = fees.reduce((sum, f) => sum + f.amount, 0);
@@ -348,15 +328,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             <CardTitle className="text-base">Project Contacts</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <ContactSection title="Owner" contact={project.owner} />
-              {project.designer && (
-                <ContactSection title="Designer" contact={project.designer} />
-              )}
-              {project.contractor && (
-                <ContactSection title="Contractor" contact={project.contractor} />
-              )}
-            </div>
+            <ProjectContactsSection
+              projectId={project.id}
+              owner={project.owner}
+              designer={project.designer}
+              contractor={project.contractor}
+              initialAdditional={project.additional_contacts ?? []}
+            />
           </CardContent>
         </Card>
 
