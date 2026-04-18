@@ -1,10 +1,20 @@
 import Link from 'next/link';
 import { FileText, BookOpen, ClipboardList } from 'lucide-react';
 import { getContacts } from '@/src/tools/get-contacts';
+import { listUserProjects } from '@/src/tools/list-user-projects';
 import { getDb } from '@/src/db';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import ContactsCard from '../components/ContactsCard';
+import StatusBadge from '../components/StatusBadge';
+import ProjectTableRow from '../components/ProjectTableRow';
+
+const TYPE_LABELS: Record<string, string> = {
+  new_residence: 'New Residence',
+  major_remodel: 'Major Remodel',
+  minor_remodel: 'Minor Remodel',
+  landscaping: 'Landscaping',
+};
 
 const DOCUMENTS = [
   {
@@ -55,6 +65,11 @@ export default async function AccPublicPage() {
   const db = getDb();
   const [contacts, session] = await Promise.all([getContacts(db), getSession()]);
 
+  const isManager = hasPermission(session, 'acc_manage');
+  const userProjects = session
+    ? await listUserProjects(db, session.partyId, isManager)
+    : [];
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
@@ -87,6 +102,51 @@ export default async function AccPublicPage() {
           </div>
         </div>
       </div>
+
+      {session && (
+        <div className="mb-8">
+          <div className="bg-white rounded-xl border border-gray-200 p-5">
+            <div className="flex items-start justify-between mb-3">
+              <h2 className="text-base font-semibold text-gray-900">My Projects</h2>
+              <Link
+                href="/acc/new"
+                className="text-sm font-medium px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors shrink-0 ml-4"
+              >
+                + New Project
+              </Link>
+            </div>
+            <p className="text-sm text-gray-500 mb-4">
+              An ACC project is an official record of any exterior work requiring committee approval — remodels, new construction, landscaping, tree removal, and more. Submitting a project starts the review process and tracks approvals, conditions, inspections, and fees in one place.
+            </p>
+            {userProjects.length === 0 ? (
+              <p className="text-sm text-gray-400 py-2">No active projects found.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500 uppercase tracking-wide border-b border-gray-100">
+                    <th className="text-left pb-2 font-medium">ID</th>
+                    <th className="text-left pb-2 font-medium">Lot</th>
+                    <th className="text-left pb-2 font-medium">Address</th>
+                    <th className="text-left pb-2 font-medium">Type</th>
+                    <th className="text-left pb-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {userProjects.map((p) => (
+                    <ProjectTableRow key={p.id} id={p.id}>
+                      <td className="py-2 font-mono text-xs text-gray-600">{p.id}</td>
+                      <td className="py-2 text-gray-700">{p.lot}</td>
+                      <td className="py-2 text-gray-900 truncate pr-2">{p.address ?? '—'}</td>
+                      <td className="py-2 text-gray-600">{TYPE_LABELS[p.type] ?? p.type}</td>
+                      <td className="py-2"><StatusBadge status={p.status} /></td>
+                    </ProjectTableRow>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
 
       <h2 className="text-lg font-semibold text-gray-900 mb-4">Common Questions</h2>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
