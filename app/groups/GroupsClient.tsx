@@ -29,17 +29,9 @@ interface Props {
   parties: PartyOption[];
 }
 
-function GroupSection({
-  group,
-  parties,
-  defaultShowForm = false,
-}: {
-  group: GroupData;
-  parties: PartyOption[];
-  defaultShowForm?: boolean;
-}) {
+function GroupSection({ group, parties }: { group: GroupData; parties: PartyOption[] }) {
   const [expanded, setExpanded] = useState(true);
-  const [showForm, setShowForm] = useState(defaultShowForm);
+  const [showForm, setShowForm] = useState(false);
   const [partyId, setPartyId] = useState('');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -237,80 +229,81 @@ export default function GroupsClient({ groups: initialGroups, parties }: Props) 
 
   return (
     <div>
-      {groups.map((group, i) => (
-        <GroupSection
-          key={group.group_name}
-          group={group}
-          parties={parties}
-          defaultShowForm={group.members.length === 0 && i === groups.length - 1}
-        />
-      ))}
-      <div className="mt-2">
-        {showNewForm ? (
-          <form onSubmit={handleCreate} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
-            <h2 className="font-semibold text-gray-900">New group</h2>
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <div className="flex flex-wrap gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500">Name (slug)</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  placeholder="e.g. landscaping"
-                  autoFocus
-                  required
-                  className="border rounded px-2 py-1 text-sm w-44"
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500">Display label</label>
-                <input
-                  type="text"
-                  value={newLabel}
-                  onChange={(e) => setNewLabel(e.target.value)}
-                  placeholder="e.g. Landscaping Committee"
-                  required
-                  className="border rounded px-2 py-1 text-sm w-56"
-                />
-              </div>
-              <div className="flex flex-col gap-1 flex-1 min-w-48">
-                <label className="text-xs text-gray-500">Description (optional)</label>
-                <input
-                  type="text"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Brief description of this group's role"
-                  className="border rounded px-2 py-1 text-sm"
-                />
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                disabled={isPending}
-                className="text-sm px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 disabled:opacity-50 cursor-pointer"
-              >
-                Create group
-              </button>
-              <button
-                type="button"
-                onClick={() => { setShowNewForm(false); setError(''); }}
-                className="text-sm px-3 py-1 border rounded hover:bg-gray-50 cursor-pointer"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
-        ) : (
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Groups</h1>
+        {!showNewForm && (
           <button
             onClick={() => setShowNewForm(true)}
-            className="text-sm text-green-700 hover:text-green-900 font-medium cursor-pointer"
+            className="text-sm px-3 py-1.5 bg-green-700 text-white rounded hover:bg-green-800 cursor-pointer"
           >
             + New group
           </button>
         )}
       </div>
+      {groups.map((group) => (
+        <GroupSection
+          key={group.group_name}
+          group={group}
+          parties={parties}
+        />
+      ))}
+      {showNewForm && (
+        <form onSubmit={handleCreate} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3 mt-2">
+          <h2 className="font-semibold text-gray-900">New group</h2>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <div className="flex flex-wrap gap-3">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Name (slug)</label>
+              <input
+                type="text"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                placeholder="e.g. landscaping"
+                autoFocus
+                required
+                className="border rounded px-2 py-1 text-sm w-44"
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs text-gray-500">Display label</label>
+              <input
+                type="text"
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                placeholder="e.g. Landscaping Committee"
+                required
+                className="border rounded px-2 py-1 text-sm w-56"
+              />
+            </div>
+            <div className="flex flex-col gap-1 flex-1 min-w-48">
+              <label className="text-xs text-gray-500">Description (optional)</label>
+              <input
+                type="text"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Brief description of this group's role"
+                className="border rounded px-2 py-1 text-sm"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={isPending}
+              className="text-sm px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 disabled:opacity-50 cursor-pointer"
+            >
+              Create group
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowNewForm(false); setError(''); }}
+              className="text-sm px-3 py-1 border rounded hover:bg-gray-50 cursor-pointer"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
     </div>
   );
 }

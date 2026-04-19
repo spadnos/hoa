@@ -63,10 +63,5 @@ export default async function GroupsPage() {
     members: memberRows.filter((m) => m.group_name === g.name),
   }));
 
-  return (
-    <div>
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">Groups</h1>
-      <GroupsClient groups={groups} parties={partyRows} />
-    </div>
-  );
+  return <GroupsClient groups={groups} parties={partyRows} />;
 }
