@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS announcements (
 
 ---
 
-### [ ] FR-13: Homeowner Account View (Medium)
+### [x] FR-13: Homeowner Account View (Medium)
 
 **What:** A member-facing portal page showing their lot, active projects, outstanding fees, and documents.
 
