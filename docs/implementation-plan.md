@@ -152,7 +152,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_parties_email ON parties(email) WHERE emai
 
 ---
 
-### [ ] FR-2: Group Management UI (Small)
+### [x] FR-2: Group Management UI (Small)
 
 **What:** A group-centric view for managing ACC, board, and other committee memberships. The data model is complete; only the UI is missing.
 

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { logoutAction } from "@/src/auth/actions";
 import type { SessionUser } from "@/src/auth/session";
 
-const links = [
+const BASE_LINKS = [
   { href: "/", label: "Home" },
   { href: "/acc", label: "ACC" },
   { href: "/directory", label: "Directory" },
@@ -19,6 +19,11 @@ interface NavProps {
 
 export default function Nav({ user }: NavProps) {
   const pathname = usePathname();
+
+  const links = [
+    ...BASE_LINKS,
+    ...(user?.permissions.includes("admin") ? [{ href: "/groups", label: "Groups" }] : []),
+  ];
 
   return (
     <nav
