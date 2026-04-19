@@ -1,38 +1,49 @@
 # Possible Enhancements
 
-## Fix Management Contacts
+## [x] Fix Management Contacts
 
 They are currently hard-coded, but should be from the management group.
 
-## Agents
+## [ ] Agents
 
 Handle common tasks like updating all the things that need to be updated when a property is sold.
 
-## Group ordering
+## [x] Group ordering
 
 Some groups, like the board, should be presented in a specific order.
 
-## Dirctory Enhancements
+## [ ] Projects
 
-- Display alphabetically, this might require splitting names to first, last.
-- Include non-owners, such as employees and management.
-- Chnage filters to be members, non-members
-- Maybe color code members vs non-members?
+- Allow owners to add project contacts such as architects, contractors, etc.
+- Allow project contacts to view a project page, including seeing it on their account page
+- Allow managers to record payment and refunds of fees
 
-## Lot photos
+## [ ] Notifications
+
+Create a notification system. For example, when a document gets added to a project, all people associated with the project get a notification.
+
+## [ ] Dirctory Enhancements
+
+- [ ] Display alphabetically, this might require splitting names to first, last.
+- [ ] Include non-owners, such as employees and management.
+- [ ] Change filters to be members, non-members
+- [ ] Maybe color code members vs non-members?
+
+## [ ] Lot photos
 
 Allow people to add a profile photo for their house/lot.
 
-## Plan review agent
+## [ ] Plan review agent
 
 Add an agent that will review plans attached to a project and compare them to the guidelines.
 
-## Announcements
+## [ ] Announcements
 
 - Add an optional date or link to "events" (which don't exist yet) for things like meetings.
 - Add attachments or links to docs for things like "Board Meeting Minutes" or updated CCRs.
+- Auto generated announcements, for example if a new document is added. Or maybe have that optional on the document upload form?
 
-## Add Guardrails on agent so it can't be used as a general chatbot
+## [ ] Add Guardrails on agent so it can't be used as a general chatbot
 
 ## Separate Data and Code
 
@@ -112,9 +123,9 @@ Track when plans are revised and resubmitted, with version numbers and dates.
 
 Summary of all projects opened/closed per year, fees collected, and common issues. Useful for board meetings.
 
-## Homeowner-Facing Status Page
+## [x] Homeowner-Facing Status Page
 
-**Status:** pending
+**Status:** completed
 
 A read-only summary of a project's status that could be emailed or linked to a homeowner, without exposing internal ACC notes.
 
