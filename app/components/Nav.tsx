@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useRef, useEffect } from "react";
 import { logoutAction } from "@/src/auth/actions";
 import type { SessionUser } from "@/src/auth/session";
 
@@ -14,18 +15,61 @@ const BASE_LINKS = [
   { href: "/chat", label: "Assistant" },
 ];
 
+const ADMIN_DROPDOWN = [
+  { href: "/admin/groups", label: "Groups" },
+  { href: "/admin/announcements", label: "Announcements" },
+];
+
 interface NavProps {
   user: SessionUser | null;
 }
 
+function AdminDropdown({ isActive }: { isActive: boolean }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className={`text-sm font-medium transition-opacity hover:opacity-100 cursor-pointer flex items-center gap-1 ${
+          isActive ? "opacity-100 underline underline-offset-4" : "opacity-75"
+        }`}
+      >
+        Admin
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute top-full left-0 mt-1 bg-white rounded shadow-lg border border-gray-200 py-1 z-50 min-w-36">
+          {ADMIN_DROPDOWN.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setOpen(false)}
+              className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+              {item.label}
+            </Link>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Nav({ user }: NavProps) {
   const pathname = usePathname();
-
-  const links = [
-    ...BASE_LINKS,
-    ...(user?.permissions.includes("admin") ? [{ href: "/groups", label: "Groups" }, { href: "/admin/announcements", label: "Announcements" }] : []),
-    ...(user?.permissions.includes("homeowner") ? [{ href: "/portal", label: "My Account" }] : []),
-  ];
+  const isAdmin = user?.permissions.includes("admin") ?? false;
 
   return (
     <nav
@@ -36,8 +80,8 @@ export default function Nav({ user }: NavProps) {
         <span className="font-bold text-lg tracking-tight">
           East Meadows HOA
         </span>
-        <div className="flex gap-6 flex-1">
-          {links.map((link) => (
+        <div className="flex gap-6 flex-1 items-center">
+          {BASE_LINKS.map((link) => (
             <Link
               key={link.href}
               href={link.href}
@@ -51,6 +95,21 @@ export default function Nav({ user }: NavProps) {
               {link.label}
             </Link>
           ))}
+          {isAdmin && (
+            <AdminDropdown isActive={pathname === "/admin" || pathname.startsWith("/admin/")} />
+          )}
+          {user?.permissions.includes("homeowner") && (
+            <Link
+              href="/portal"
+              className={`text-sm font-medium transition-opacity hover:opacity-100 ${
+                pathname === "/portal" || pathname.startsWith("/portal/")
+                  ? "opacity-100 underline underline-offset-4"
+                  : "opacity-75"
+              }`}
+            >
+              My Account
+            </Link>
+          )}
         </div>
         {user && (
           <div className="flex items-center gap-3">
