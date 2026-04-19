@@ -22,7 +22,7 @@ export default function Nav({ user }: NavProps) {
 
   const links = [
     ...BASE_LINKS,
-    ...(user?.permissions.includes("admin") ? [{ href: "/groups", label: "Groups" }] : []),
+    ...(user?.permissions.includes("admin") ? [{ href: "/groups", label: "Groups" }, { href: "/admin/announcements", label: "Announcements" }] : []),
     ...(user?.permissions.includes("homeowner") ? [{ href: "/portal", label: "My Account" }] : []),
   ];
 

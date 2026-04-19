@@ -185,7 +185,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_parties_email ON parties(email) WHERE emai
 
 ## Phase 3: Member Portal
 
-### [ ] FR-12: Announcements (Small)
+### [x] FR-12: Announcements (Small)
 
 **What:** Replace the hardcoded placeholder in `AnnouncementsCard` with a real announcement system.
 

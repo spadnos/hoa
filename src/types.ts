@@ -163,6 +163,18 @@ export interface LotAssociation {
   end_date: string | null;
 }
 
+export interface Announcement {
+  id: number;
+  organization_id: string;
+  title: string;
+  body: string;
+  posted_by_party_id: number | null;
+  visible_from: string;
+  visible_until: string | null;
+  audience: 'public' | 'members' | 'board';
+  created_at: string;
+}
+
 export interface GroupMembership {
   id: number;
   party_id: number;
