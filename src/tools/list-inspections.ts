@@ -20,14 +20,15 @@ export interface ListInspectionsInput {
 
 export async function listInspections(
   input: ListInspectionsInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<Inspection[]> {
   return db
     .prepare(
       `SELECT id, project_id, type, inspector, date, outcome, notes, created_at
        FROM inspections
-       WHERE project_id = ? AND organization_id = 'emhoa'
+       WHERE project_id = ? AND organization_id = ?
        ORDER BY date, id`
     )
-    .all(input.project_id) as Inspection[];
+    .all(input.project_id, orgId) as Inspection[];
 }

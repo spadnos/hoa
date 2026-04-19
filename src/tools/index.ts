@@ -67,57 +67,58 @@ function documentsDir(): string {
 
 export async function executeTool(
   name: string,
-  input: Record<string, unknown>
+  input: Record<string, unknown>,
+  orgId: string
 ): Promise<unknown> {
   const db = getDb();
 
   switch (name) {
     case 'list_projects':
-      return listProjects(input as ListProjectsInput, db);
+      return listProjects(input as ListProjectsInput, db, orgId);
     case 'get_project':
-      return getProject(input as unknown as GetProjectInput, db);
+      return getProject(input as unknown as GetProjectInput, db, orgId);
     case 'create_project':
-      return createProject(input as unknown as CreateProjectInput, db);
+      return createProject(input as unknown as CreateProjectInput, db, orgId);
     case 'update_project':
-      return updateProject(input as unknown as UpdateProjectInput, db);
+      return updateProject(input as unknown as UpdateProjectInput, db, orgId);
     case 'list_documents':
       return listDocuments(documentsDir());
     case 'get_document':
       return getDocument(input as unknown as GetDocumentInput, documentsDir());
     case 'get_contacts':
-      return getContacts(db);
+      return getContacts(db, orgId);
     case 'add_contact':
-      return addContact(input as unknown as AddContactInput, db);
+      return addContact(input as unknown as AddContactInput, db, orgId);
     case 'edit_contact':
-      return editContact(input as unknown as EditContactInput, db);
+      return editContact(input as unknown as EditContactInput, db, orgId);
     case 'remove_contact':
-      return removeContact(input as unknown as RemoveContactInput, db);
+      return removeContact(input as unknown as RemoveContactInput, db, orgId);
     case 'get_fee_ledger':
-      return getFeeLedger(db);
+      return getFeeLedger(db, orgId);
     case 'get_deadlines':
-      return getDeadlines(input as unknown as GetDeadlinesInput, db);
+      return getDeadlines(input as unknown as GetDeadlinesInput, db, orgId);
     case 'add_condition':
-      return addCondition(input as unknown as AddConditionInput, db);
+      return addCondition(input as unknown as AddConditionInput, db, orgId);
     case 'update_condition':
-      return updateCondition(input as unknown as UpdateConditionInput, db);
+      return updateCondition(input as unknown as UpdateConditionInput, db, orgId);
     case 'list_conditions':
-      return listConditions(input as unknown as ListConditionsInput, db);
+      return listConditions(input as unknown as ListConditionsInput, db, orgId);
     case 'log_inspection':
-      return logInspection(input as unknown as LogInspectionInput, db);
+      return logInspection(input as unknown as LogInspectionInput, db, orgId);
     case 'list_inspections':
-      return listInspections(input as unknown as ListInspectionsInput, db);
+      return listInspections(input as unknown as ListInspectionsInput, db, orgId);
     case 'add_project_document':
-      return addProjectDocument(input as unknown as AddProjectDocumentInput, db);
+      return addProjectDocument(input as unknown as AddProjectDocumentInput, db, orgId);
     case 'list_project_documents':
-      return listProjectDocuments(input as unknown as ListProjectDocumentsInput, db);
+      return listProjectDocuments(input as unknown as ListProjectDocumentsInput, db, orgId);
     case 'get_members':
-      return getMembers(input as unknown as GetMembersInput, db);
+      return getMembers(input as unknown as GetMembersInput, db, orgId);
     case 'add_member':
-      return addMember(input as unknown as AddMemberInput, db);
+      return addMember(input as unknown as AddMemberInput, db, orgId);
     case 'edit_member':
-      return editMember(input as unknown as EditMemberInput, db);
+      return editMember(input as unknown as EditMemberInput, db, orgId);
     case 'remove_member':
-      return removeMember(input as unknown as RemoveMemberInput, db);
+      return removeMember(input as unknown as RemoveMemberInput, db, orgId);
     default:
       return `Unknown tool: ${name}`;
   }

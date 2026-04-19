@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import { getTools, executeTool } from './tools/index';
 import { SYSTEM_PROMPT } from './system-prompt';
+import { ORG_ID } from './db';
 
 export function createChatHandler(anthropic: Anthropic) {
   return async function chatHandler(req: Request, res: Response): Promise<void> {
@@ -63,7 +64,8 @@ export function createChatHandler(anthropic: Anthropic) {
           for (const toolUse of toolUses) {
             const result = await executeTool(
               toolUse.name,
-              JSON.parse(toolUse.inputJson || '{}')
+              JSON.parse(toolUse.inputJson || '{}'),
+              ORG_ID
             );
             toolResults.push({
               type: 'tool_result',

@@ -19,15 +19,15 @@ export interface RemoveMemberInput {
   lot?: number;
 }
 
-export async function removeMember(input: RemoveMemberInput, db: Db): Promise<{ message: string }> {
+export async function removeMember(input: RemoveMemberInput, db: Db, orgId: string): Promise<{ message: string }> {
   const today = new Date().toISOString().split('T')[0];
 
   let sql = `UPDATE lot_associations SET end_date = ? WHERE party_id = ? AND end_date IS NULL`;
   const params: unknown[] = [today, input.id];
 
   if (input.lot !== undefined) {
-    sql += ` AND lot_id = (SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?)`;
-    params.push(input.lot);
+    sql += ` AND lot_id = (SELECT id FROM lots WHERE organization_id = ? AND lot_number = ?)`;
+    params.push(orgId, input.lot);
   }
 
   const result = db.prepare(sql).run(...params);

@@ -1,11 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getTools, executeTool } from '@/src/tools/index';
 import { SYSTEM_PROMPT } from '@/src/system-prompt';
+import { getSession } from '@/src/auth/session';
+import { ORG_ID } from '@/src/db';
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(request: Request) {
-  const { messages } = (await request.json()) as { messages: Anthropic.MessageParam[] };
+  const [{ messages }, session] = await Promise.all([
+    request.json() as Promise<{ messages: Anthropic.MessageParam[] }>,
+    getSession(),
+  ]);
+  const orgId = session?.organizationId ?? ORG_ID;
 
   const encoder = new TextEncoder();
   const tools = getTools();
@@ -53,7 +59,7 @@ export async function POST(request: Request) {
             allMessages.push({ role: 'assistant', content: finalMessage.content });
             const toolResults: Anthropic.ToolResultBlockParam[] = [];
             for (const toolUse of toolUses) {
-              const result = await executeTool(toolUse.name, JSON.parse(toolUse.inputJson || '{}'));
+              const result = await executeTool(toolUse.name, JSON.parse(toolUse.inputJson || '{}'), orgId);
               toolResults.push({
                 type: 'tool_result',
                 tool_use_id: toolUse.id,

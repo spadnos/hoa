@@ -1,5 +1,7 @@
 # Possible Enhancements
 
+## Add Guardrails on agent so it can't be used as a general chatbot
+
 ## Separate Data and Code
 
 Put the data in a separate location. This would allow the data to go in a shared locations, such as Dropbox, Google Drive, etc.

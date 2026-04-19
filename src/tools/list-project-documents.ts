@@ -20,14 +20,15 @@ export interface ListProjectDocumentsInput {
 
 export async function listProjectDocuments(
   input: ListProjectDocumentsInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<ProjectDocument[]> {
   return db
     .prepare(
       `SELECT id, project_id, title, file_path, description, uploaded_at
        FROM project_documents
-       WHERE project_id = ? AND organization_id = 'emhoa'
+       WHERE project_id = ? AND organization_id = ?
        ORDER BY uploaded_at, id`
     )
-    .all(input.project_id) as ProjectDocument[];
+    .all(input.project_id, orgId) as ProjectDocument[];
 }

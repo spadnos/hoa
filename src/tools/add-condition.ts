@@ -21,19 +21,20 @@ export interface AddConditionInput {
 
 export async function addCondition(
   input: AddConditionInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: number; project_id: string } | string> {
   const project = db
-    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(input.project_id);
+    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = ?`)
+    .get(input.project_id, orgId);
   if (!project) return `Project ${input.project_id} not found`;
 
   const result = db
     .prepare(
       `INSERT INTO conditions (project_id, organization_id, description)
-       VALUES (?, 'emhoa', ?)`
+       VALUES (?, ?, ?)`
     )
-    .run(input.project_id, input.description);
+    .run(input.project_id, orgId, input.description);
 
   return { id: result.lastInsertRowid as number, project_id: input.project_id };
 }

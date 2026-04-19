@@ -35,20 +35,22 @@ export interface LogInspectionInput {
 
 export async function logInspection(
   input: LogInspectionInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: number; project_id: string } | string> {
   const project = db
-    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(input.project_id);
+    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = ?`)
+    .get(input.project_id, orgId);
   if (!project) return `Project ${input.project_id} not found`;
 
   const result = db
     .prepare(
       `INSERT INTO inspections (project_id, organization_id, type, inspector, date, outcome, notes)
-       VALUES (?, 'emhoa', ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
       input.project_id,
+      orgId,
       input.type,
       input.inspector,
       input.date,

@@ -35,7 +35,7 @@ export interface FeeLedgerResult {
   projects: ProjectFees[];
 }
 
-export async function getFeeLedger(db: Db): Promise<FeeLedgerResult> {
+export async function getFeeLedger(db: Db, orgId: string): Promise<FeeLedgerResult> {
   const rows = db
     .prepare(
       `SELECT f.description, f.amount, f.due_at,
@@ -44,10 +44,10 @@ export async function getFeeLedger(db: Db): Promise<FeeLedgerResult> {
        JOIN projects p ON p.id = f.project_id
        JOIN lots l ON l.id = p.lot_id
        LEFT JOIN parties op ON op.id = p.owner_party_id
-       WHERE f.organization_id = 'emhoa' AND f.paid_at IS NULL
+       WHERE f.organization_id = ? AND f.paid_at IS NULL
        ORDER BY p.id, f.id`
     )
-    .all() as FeeLedgerRow[];
+    .all(orgId) as FeeLedgerRow[];
 
   const byProject = new Map<string, ProjectFees>();
   let totalOutstanding = 0;

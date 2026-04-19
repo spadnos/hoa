@@ -40,7 +40,8 @@ export interface EditContactInput {
 
 export async function editContact(
   input: EditContactInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ section: string; name: string } | string> {
   const groupName = input.section === 'acc' ? 'acc' : 'board';
 
@@ -49,12 +50,12 @@ export async function editContact(
       `SELECT p.id as party_id, gm.id as membership_id
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
-       WHERE p.organization_id = 'emhoa'
+       WHERE p.organization_id = ?
          AND gm.group_name = ?
          AND LOWER(p.name) = LOWER(?)
          AND gm.end_date IS NULL`
     )
-    .get(groupName, input.name) as { party_id: number; membership_id: number } | undefined;
+    .get(orgId, groupName, input.name) as { party_id: number; membership_id: number } | undefined;
 
   if (!row) return `Contact "${input.name}" not found in ${groupName} members`;
 

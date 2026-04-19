@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import NewProjectForm from '@/app/components/NewProjectForm';
@@ -11,6 +11,7 @@ export default async function NewProjectPage() {
   if (!session) redirect('/acc');
 
   const db = getDb();
+  const orgId = session.organizationId ?? ORG_ID;
   const isManager = hasPermission(session, 'acc_manage');
 
   let lots: LotSearchResult[];
@@ -34,9 +35,9 @@ export default async function NewProjectPage() {
         AND lassoc.role IN ('owner', 'trustee', 'corporate_owner')
         AND lassoc.is_primary_contact = 1
       LEFT JOIN parties p ON p.id = lassoc.party_id
-      WHERE l.organization_id = 'emhoa'
+      WHERE l.organization_id = ?
       ORDER BY l.lot_number, la.address
-    `).all() as LotSearchResult[];
+    `).all(orgId) as LotSearchResult[];
   } else {
     lots = db.prepare(`
       SELECT
@@ -56,13 +57,13 @@ export default async function NewProjectPage() {
         AND lassoc.role IN ('owner', 'trustee', 'corporate_owner')
         AND lassoc.is_primary_contact = 1
       LEFT JOIN parties p ON p.id = lassoc.party_id
-      WHERE l.organization_id = 'emhoa'
+      WHERE l.organization_id = ?
         AND EXISTS (
           SELECT 1 FROM lot_associations ua
           WHERE ua.lot_id = l.id AND ua.party_id = ? AND ua.end_date IS NULL
         )
       ORDER BY l.lot_number, la.address
-    `).all(session.partyId) as LotSearchResult[];
+    `).all(orgId, session.partyId) as LotSearchResult[];
   }
 
   return (

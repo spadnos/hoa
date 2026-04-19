@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import { getSession } from '@/src/auth/session';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
 import type { Party } from '@/src/types';
 import LoginClient from '../components/LoginClient';
 
@@ -11,9 +11,9 @@ export default async function LoginPage() {
   const db = getDb();
   const parties = db.prepare(
     `SELECT id, name FROM parties
-     WHERE type = 'person' AND organization_id = 'emhoa'
+     WHERE type = 'person' AND organization_id = ?
      ORDER BY name ASC`
-  ).all() as Pick<Party, 'id' | 'name'>[];
+  ).all(ORG_ID) as Pick<Party, 'id' | 'name'>[];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 px-4">

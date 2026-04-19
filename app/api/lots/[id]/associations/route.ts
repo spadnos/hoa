@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 import { addLotAssociation } from '@/src/tools/manage-parties';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const db = getDb();
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
   const body = await req.json();
   const { party_id, role, address, unit, is_primary_contact, mailing_address, start_date } = body;
 
@@ -19,7 +21,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const result = addLotAssociation(
     { lot_number: lotRow.lot_number, party_id, role, address, unit, is_primary_contact, mailing_address, start_date },
-    db
+    db,
+    orgId
   );
   return NextResponse.json(result, { status: 201 });
 }

@@ -27,7 +27,8 @@ export interface RemoveContactInput {
 
 export async function removeContact(
   input: RemoveContactInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ section: string; name: string } | string> {
   const groupName = input.section === 'acc' ? 'acc' : 'board';
   const today = new Date().toISOString().split('T')[0];
@@ -39,13 +40,13 @@ export async function removeContact(
        WHERE id IN (
          SELECT gm.id FROM group_memberships gm
          JOIN parties p ON p.id = gm.party_id
-         WHERE p.organization_id = 'emhoa'
+         WHERE p.organization_id = ?
            AND gm.group_name = ?
            AND LOWER(p.name) = LOWER(?)
            AND gm.end_date IS NULL
        )`
     )
-    .run(today, groupName, input.name);
+    .run(today, orgId, groupName, input.name);
 
   if (result.changes === 0) {
     return `Contact "${input.name}" not found in ${groupName} members`;

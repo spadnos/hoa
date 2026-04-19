@@ -55,7 +55,8 @@ function daysBetween(from: Date, to: Date): number {
 
 export async function getDeadlines(
   input: GetDeadlinesInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<Deadline[]> {
   const daysAhead = input.days_ahead ?? 30;
   const today = new Date();
@@ -80,8 +81,8 @@ export async function getDeadlines(
     FROM projects p
     JOIN lots l ON l.id = p.lot_id
     LEFT JOIN parties op ON op.id = p.owner_party_id
-    WHERE p.organization_id = 'emhoa'`;
-  const params: unknown[] = [];
+    WHERE p.organization_id = ?`;
+  const params: unknown[] = [orgId];
   if (input.project_id) {
     sql += ' AND p.id = ?';
     params.push(input.project_id);

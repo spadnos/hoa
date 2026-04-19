@@ -39,10 +39,11 @@ export interface AddMemberInput {
   notes?: string;
 }
 
-export async function addMember(input: AddMemberInput, db: Db): Promise<{ id: number; message: string }> {
+export async function addMember(input: AddMemberInput, db: Db, orgId: string): Promise<{ id: number; message: string }> {
   const partyId = getOrCreateParty(
     { name: input.name, email: input.email, phone: input.phone, notes: input.notes },
-    db
+    db,
+    orgId
   );
 
   const assoc = addLotAssociation(
@@ -53,7 +54,8 @@ export async function addMember(input: AddMemberInput, db: Db): Promise<{ id: nu
       is_primary_contact: input.is_primary_contact ?? false,
       mailing_address: input.mailing_address,
     },
-    db
+    db,
+    orgId
   );
 
   return { id: partyId, message: `Added ${input.role} "${input.name}" for lot ${input.lot}` };

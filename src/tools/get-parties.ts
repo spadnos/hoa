@@ -114,20 +114,20 @@ function buildDirectoryParty(
   };
 }
 
-export async function getDirectoryParties(db: Db): Promise<DirectoryParty[]> {
+export async function getDirectoryParties(db: Db, orgId: string): Promise<DirectoryParty[]> {
   const partyRows = db
     .prepare(
       `SELECT p.*, po.org_type, po.website
        FROM parties p
        LEFT JOIN party_orgs po ON po.party_id = p.id
-       WHERE p.organization_id = 'emhoa'
+       WHERE p.organization_id = ?
          AND (
            EXISTS (SELECT 1 FROM lot_associations la WHERE la.party_id = p.id AND la.end_date IS NULL)
            OR EXISTS (SELECT 1 FROM group_memberships gm WHERE gm.party_id = p.id AND gm.end_date IS NULL)
          )
        ORDER BY p.name`
     )
-    .all() as PartyRow[];
+    .all(orgId) as PartyRow[];
 
   const assocRows = db
     .prepare(
@@ -135,18 +135,18 @@ export async function getDirectoryParties(db: Db): Promise<DirectoryParty[]> {
        FROM lot_associations la
        JOIN lots l ON l.id = la.lot_id
        LEFT JOIN lot_addresses la2 ON la2.id = la.lot_address_id
-       WHERE la.end_date IS NULL AND l.organization_id = 'emhoa'`
+       WHERE la.end_date IS NULL AND l.organization_id = ?`
     )
-    .all() as LotAssocRow[];
+    .all(orgId) as LotAssocRow[];
 
   const membershipRows = db
     .prepare(
       `SELECT gm.*
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
-       WHERE gm.end_date IS NULL AND p.organization_id = 'emhoa'`
+       WHERE gm.end_date IS NULL AND p.organization_id = ?`
     )
-    .all() as GroupMembershipRow[];
+    .all(orgId) as GroupMembershipRow[];
 
   const affiliationRows = db
     .prepare(
@@ -156,24 +156,24 @@ export async function getDirectoryParties(db: Db): Promise<DirectoryParty[]> {
        FROM party_affiliations pa
        JOIN parties op ON op.id = pa.org_party_id
        JOIN parties pp ON pp.id = pa.person_party_id
-       WHERE op.organization_id = 'emhoa'`
+       WHERE op.organization_id = ?`
     )
-    .all() as AffiliationRow[];
+    .all(orgId) as AffiliationRow[];
 
   return partyRows.map((row) =>
     buildDirectoryParty(row, assocRows, membershipRows, affiliationRows)
   );
 }
 
-export async function getPartyById(id: number, db: Db): Promise<DirectoryParty | null> {
+export async function getPartyById(id: number, db: Db, orgId: string): Promise<DirectoryParty | null> {
   const row = db
     .prepare(
       `SELECT p.*, po.org_type, po.website
        FROM parties p
        LEFT JOIN party_orgs po ON po.party_id = p.id
-       WHERE p.id = ? AND p.organization_id = 'emhoa'`
+       WHERE p.id = ? AND p.organization_id = ?`
     )
-    .get(id) as PartyRow | undefined;
+    .get(id, orgId) as PartyRow | undefined;
 
   if (!row) return null;
 
@@ -206,18 +206,18 @@ export async function getPartyById(id: number, db: Db): Promise<DirectoryParty |
   return buildDirectoryParty(row, assocRows, membershipRows, affiliationRows);
 }
 
-export async function getCurrentBoardAndACC(db: Db): Promise<HoaMembers> {
+export async function getCurrentBoardAndACC(db: Db, orgId: string): Promise<HoaMembers> {
   const rows = db
     .prepare(
       `SELECT p.id, p.name, p.email, p.phone, gm.title as role, gm.group_name
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
-       WHERE p.organization_id = 'emhoa'
+       WHERE p.organization_id = ?
          AND gm.group_name IN ('acc', 'board')
          AND gm.end_date IS NULL
        ORDER BY gm.group_name, p.name`
     )
-    .all() as Array<{ id: number; name: string; email: string | null; phone: string | null; role: string; group_name: string }>;
+    .all(orgId) as Array<{ id: number; name: string; email: string | null; phone: string | null; role: string; group_name: string }>;
 
   const toContact = (r: { id: number; name: string; email: string | null; phone: string | null; role: string }): HoaContact => {
     const c: HoaContact = { id: r.id, name: r.name, role: r.role };

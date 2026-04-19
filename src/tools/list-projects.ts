@@ -39,14 +39,14 @@ interface SummaryRow {
   status: ProjectStatus;
 }
 
-export async function listProjects(input: ListProjectsInput, db: Db): Promise<ProjectSummary[]> {
+export async function listProjects(input: ListProjectsInput, db: Db, orgId: string): Promise<ProjectSummary[]> {
   let sql = `
     SELECT p.id, l.lot_number, op.name as owner_name, p.type, p.status
     FROM projects p
     JOIN lots l ON l.id = p.lot_id
     LEFT JOIN parties op ON op.id = p.owner_party_id
     WHERE p.organization_id = ?`;
-  const params: unknown[] = ['emhoa'];
+  const params: unknown[] = [orgId];
 
   if (input.status) {
     sql += ' AND p.status = ?';

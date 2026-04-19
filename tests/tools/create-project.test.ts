@@ -17,7 +17,9 @@ test('creates project and returns id', async () => {
       type: 'new_residence',
       description: 'new house',
     },
-    db
+    db,
+
+      'emhoa'
   );
   expect(typeof result).toBe('object');
   const project = result as { id: string };
@@ -30,7 +32,9 @@ test('creates project and returns id', async () => {
 test('pre-populates standard fees for new_residence', async () => {
   const result = (await createProject(
     { lot: 1, owner: { name: 'Bob' }, address: '1 Main St', type: 'new_residence', description: 'build' },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const fees = db
@@ -45,7 +49,9 @@ test('pre-populates standard fees for new_residence', async () => {
 test('pre-populates standard fees for minor_remodel', async () => {
   const result = (await createProject(
     { lot: 2, owner: { name: 'Carol' }, address: '2 Pine St', type: 'minor_remodel', description: 'deck' },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const fees = db
@@ -57,11 +63,15 @@ test('pre-populates standard fees for minor_remodel', async () => {
 test('generates sequential IDs within the same year', async () => {
   const r1 = (await createProject(
     { lot: 1, owner: { name: 'A' }, address: '1 St', type: 'landscaping', description: 'trees' },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
   const r2 = (await createProject(
     { lot: 2, owner: { name: 'B' }, address: '2 St', type: 'landscaping', description: 'shrubs' },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const year = new Date().getFullYear();
@@ -84,11 +94,19 @@ test('writes owner as a ContactInfo object', async () => {
       type: 'new_residence',
       description: 'new-house',
     },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const row = db
-    .prepare(`SELECT owner_name, owner_email, owner_lot_address FROM projects WHERE id = ?`)
+    .prepare(
+      `SELECT p.name as owner_name, p.email as owner_email, la.address as owner_lot_address
+       FROM projects pr
+       JOIN parties p ON p.id = pr.owner_party_id
+       JOIN lot_addresses la ON la.id = pr.lot_address_id
+       WHERE pr.id = ?`
+    )
     .get(result.id) as { owner_name: string; owner_email: string; owner_lot_address: string };
   expect(row.owner_name).toBe('Dana');
   expect(row.owner_email).toBe('dana@example.com');
@@ -106,23 +124,30 @@ test('writes designer and contractor when provided', async () => {
       designer: { name: 'Frank', company: 'Studio F', email: 'frank@studio.com' },
       contractor: { name: 'Grace', company: 'GC Inc', phone: '555-222-3333' },
     },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const row = db
     .prepare(
-      `SELECT designer_name, designer_company, contractor_name, contractor_company FROM projects WHERE id = ?`
+      `SELECT dp.name as designer_name, dp.notes as designer_notes,
+              cp.name as contractor_name, cp.notes as contractor_notes
+       FROM projects pr
+       LEFT JOIN parties dp ON dp.id = pr.designer_party_id
+       LEFT JOIN parties cp ON cp.id = pr.contractor_party_id
+       WHERE pr.id = ?`
     )
     .get(result.id) as {
     designer_name: string;
-    designer_company: string;
+    designer_notes: string;
     contractor_name: string;
-    contractor_company: string;
+    contractor_notes: string;
   };
   expect(row.designer_name).toBe('Frank');
-  expect(row.designer_company).toBe('Studio F');
+  expect(row.designer_notes).toBe('Company: Studio F');
   expect(row.contractor_name).toBe('Grace');
-  expect(row.contractor_company).toBe('GC Inc');
+  expect(row.contractor_notes).toBe('Company: GC Inc');
 });
 
 test('omits designer and contractor when not provided', async () => {
@@ -134,12 +159,14 @@ test('omits designer and contractor when not provided', async () => {
       type: 'landscaping',
       description: 'landscaping',
     },
-    db
+    db,
+
+      'emhoa'
   )) as { id: string };
 
   const row = db
-    .prepare(`SELECT designer_name, contractor_name FROM projects WHERE id = ?`)
-    .get(result.id) as { designer_name: string | null; contractor_name: string | null };
-  expect(row.designer_name).toBeNull();
-  expect(row.contractor_name).toBeNull();
+    .prepare(`SELECT designer_party_id, contractor_party_id FROM projects WHERE id = ?`)
+    .get(result.id) as { designer_party_id: number | null; contractor_party_id: number | null };
+  expect(row.designer_party_id).toBeNull();
+  expect(row.contractor_party_id).toBeNull();
 });

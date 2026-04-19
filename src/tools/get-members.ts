@@ -39,16 +39,16 @@ interface MemberRow {
   created_at: string;
 }
 
-export async function getMembers(input: GetMembersInput, db: Db): Promise<Member[]> {
+export async function getMembers(input: GetMembersInput, db: Db, orgId: string): Promise<Member[]> {
   let sql = `
     SELECT p.id, l.lot_number as lot, p.name, la.role, la.is_primary_contact,
            p.email, p.phone, la.mailing_address, p.notes, p.created_at
     FROM lot_associations la
     JOIN parties p ON p.id = la.party_id
     JOIN lots l ON l.id = la.lot_id
-    WHERE l.organization_id = 'emhoa' AND la.end_date IS NULL
+    WHERE l.organization_id = ? AND la.end_date IS NULL
       AND la.role IN ('owner', 'resident')`;
-  const params: unknown[] = [];
+  const params: unknown[] = [orgId];
 
   if (input.lot !== undefined) {
     sql += ' AND l.lot_number = ?';

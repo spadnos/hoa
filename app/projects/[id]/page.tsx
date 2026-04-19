@@ -1,11 +1,13 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { getDb } from '@/src/db';
+import { notFound, redirect } from 'next/navigation';
+import { getDb, ORG_ID } from '@/src/db';
 import { getProject } from '@/src/tools/get-project';
 import { listConditions } from '@/src/tools/list-conditions';
 import { listInspections } from '@/src/tools/list-inspections';
 import { listProjectDocuments } from '@/src/tools/list-project-documents';
 import type { Fee, Condition, Inspection, ProjectDocument, ProjectType } from '@/src/types';
+import { getSession } from '@/src/auth/session';
+import { hasPermission } from '@/src/auth/permissions';
 import ProjectContactsSection from '@/app/components/ProjectContactsSection';
 import StatusBadge from '@/app/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -248,17 +250,43 @@ function DocumentsCard({ documents }: { documents: ProjectDocument[] }) {
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const db = getDb();
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
 
   const [project, conditions, inspections, documents] = await Promise.all([
-    getProject({ id }, db),
-    listConditions({ project_id: id }, db),
-    listInspections({ project_id: id }, db),
-    listProjectDocuments({ project_id: id }, db),
+    getProject({ id }, db, orgId),
+    listConditions({ project_id: id }, db, orgId),
+    listInspections({ project_id: id }, db, orgId),
+    listProjectDocuments({ project_id: id }, db, orgId),
   ]);
 
   if (typeof project === 'string') {
     notFound();
+  }
+
+  if (!hasPermission(session, 'acc_manage')) {
+    const projectRow = db
+      .prepare('SELECT lot_id FROM projects WHERE id = ?')
+      .get(id) as { lot_id: number } | undefined;
+
+    const isLotParticipant =
+      projectRow &&
+      !!db
+        .prepare(
+          'SELECT 1 FROM lot_associations WHERE party_id = ? AND lot_id = ? AND end_date IS NULL'
+        )
+        .get(session?.partyId, projectRow.lot_id);
+
+    const contactPartyIds = [
+      project.owner?.party_id,
+      project.designer?.party_id,
+      project.contractor?.party_id,
+      ...(project.additional_contacts?.map((c) => c.party_id) ?? []),
+    ].filter((pid): pid is number => typeof pid === 'number');
+
+    if (!isLotParticipant && !contactPartyIds.includes(session?.partyId ?? -1)) {
+      redirect('/');
+    }
   }
 
   const milestones = [

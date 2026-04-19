@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { getDirectoryParties } from '@/src/tools/get-parties';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 import DirectoryClient, { type DirectoryEntry } from '../components/DirectoryClient';
 
 const GROUP_LABEL: Record<string, string> = {
@@ -12,8 +13,8 @@ const GROUP_LABEL: Record<string, string> = {
 };
 
 export default async function DirectoryPage() {
-  const db = getDb();
-  const parties = await getDirectoryParties(db);
+  const [db, session] = [getDb(), await getSession()];
+  const parties = await getDirectoryParties(db, session?.organizationId ?? ORG_ID);
 
   const entries: DirectoryEntry[] = parties.map((p) => {
     const labels: string[] = [];

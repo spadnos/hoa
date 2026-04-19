@@ -24,37 +24,48 @@ export function seedTestProject(db: Db, overrides: Partial<Project> = {}): void 
 
   const owner = project.owner as ContactInfo;
 
+  const existingLot = db
+    .prepare(`SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?`)
+    .get(project.lot) as { id: number } | undefined;
+
+  let lotId: number;
+  if (existingLot) {
+    lotId = existingLot.id;
+  } else {
+    const r = db
+      .prepare(`INSERT INTO lots (organization_id, lot_number) VALUES ('emhoa', ?)`)
+      .run(project.lot);
+    lotId = r.lastInsertRowid as number;
+  }
+
+  const addrResult = db
+    .prepare(`INSERT INTO lot_addresses (lot_id, address) VALUES (?, ?)`)
+    .run(lotId, project.address);
+  const lotAddressId = addrResult.lastInsertRowid as number;
+
+  const partyResult = db
+    .prepare(
+      `INSERT INTO parties (organization_id, type, name, email, phone) VALUES ('emhoa', 'person', ?, ?, ?)`
+    )
+    .run(owner.name, owner.email ?? null, owner.phone ?? null);
+  const ownerPartyId = partyResult.lastInsertRowid as number;
+
   db.prepare(
     `INSERT INTO projects (
-      id, organization_id, lot, address, type, status, submitted,
-      owner_name, owner_email, owner_phone, owner_lot_address, owner_mailing_address,
-      designer_name, designer_email, designer_phone, designer_company,
-      contractor_name, contractor_email, contractor_phone, contractor_company,
-      notes,
+      id, organization_id, lot_id, lot_address_id, type, status, submitted,
+      notes, owner_party_id,
       preliminary_approved_at, final_approved_at,
       construction_started_at, owner_notified_complete_at
-    ) VALUES (?, 'emhoa', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    ) VALUES (?, 'emhoa', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     project.id,
-    project.lot,
-    project.address,
+    lotId,
+    lotAddressId,
     project.type,
     project.status,
     project.submitted,
-    owner.name,
-    owner.email ?? null,
-    owner.phone ?? null,
-    owner.lot_address ?? null,
-    owner.mailing_address ?? null,
-    project.designer?.name ?? null,
-    project.designer?.email ?? null,
-    project.designer?.phone ?? null,
-    project.designer?.company ?? null,
-    project.contractor?.name ?? null,
-    project.contractor?.email ?? null,
-    project.contractor?.phone ?? null,
-    project.contractor?.company ?? null,
     project.notes ?? null,
+    ownerPartyId,
     project.preliminary_approved_at ?? null,
     project.final_approved_at ?? null,
     project.construction_started_at ?? null,
@@ -80,10 +91,19 @@ export function seedTestContact(
     phone?: string;
   }
 ): void {
+  const partyResult = db
+    .prepare(
+      `INSERT INTO parties (organization_id, type, name, email, phone)
+       VALUES ('emhoa', 'person', ?, ?, ?)`
+    )
+    .run(opts.name, opts.email ?? null, opts.phone ?? null);
+
+  const partyId = partyResult.lastInsertRowid as number;
+  const groupName = opts.group_name === 'acc_member' ? 'acc' : 'board';
+
   db.prepare(
-    `INSERT INTO contacts (organization_id, name, role, group_name, email, phone)
-     VALUES ('emhoa', ?, ?, ?, ?, ?)`
-  ).run(opts.name, opts.role, opts.group_name, opts.email ?? null, opts.phone ?? null);
+    `INSERT INTO group_memberships (party_id, group_name, title) VALUES (?, ?, ?)`
+  ).run(partyId, groupName, opts.role);
 }
 
 export function makeTempDir(): string {

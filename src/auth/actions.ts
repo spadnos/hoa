@@ -10,8 +10,8 @@ export async function loginAction(partyId: number): Promise<void> {
   const db = getDb();
 
   const party = db.prepare(
-    `SELECT id, name FROM parties WHERE id = ? AND type = 'person'`
-  ).get(partyId) as { id: number; name: string } | undefined;
+    `SELECT id, name, organization_id FROM parties WHERE id = ? AND type = 'person'`
+  ).get(partyId) as { id: number; name: string; organization_id: string } | undefined;
 
   if (!party) throw new Error('Party not found');
 
@@ -24,7 +24,7 @@ export async function loginAction(partyId: number): Promise<void> {
   ).all(partyId) as LotAssociation[];
 
   const permissions = derivePermissions(memberships, lotAssociations);
-  await createSession({ partyId: party.id, name: party.name, permissions });
+  await createSession({ partyId: party.id, organizationId: party.organization_id, name: party.name, permissions });
 
   redirect('/');
 }

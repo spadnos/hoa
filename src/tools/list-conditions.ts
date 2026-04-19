@@ -25,13 +25,15 @@ export interface ListConditionsInput {
 
 export async function listConditions(
   input: ListConditionsInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<Condition[]> {
   let sql = `SELECT id, project_id, description, satisfied_at, created_at
              FROM conditions
-             WHERE project_id = ? AND organization_id = 'emhoa'`;
+             WHERE project_id = ? AND organization_id = ?`;
+  const params: unknown[] = [input.project_id, orgId];
   if (input.unsatisfied_only) sql += ' AND satisfied_at IS NULL';
   sql += ' ORDER BY id';
 
-  return db.prepare(sql).all(input.project_id) as Condition[];
+  return db.prepare(sql).all(...params) as Condition[];
 }

@@ -30,19 +30,20 @@ export interface AddProjectDocumentInput {
 
 export async function addProjectDocument(
   input: AddProjectDocumentInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: number; project_id: string } | string> {
   const project = db
-    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(input.project_id);
+    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = ?`)
+    .get(input.project_id, orgId);
   if (!project) return `Project ${input.project_id} not found`;
 
   const result = db
     .prepare(
       `INSERT INTO project_documents (project_id, organization_id, title, file_path, description)
-       VALUES (?, 'emhoa', ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?)`
     )
-    .run(input.project_id, input.title, input.file_path, input.description ?? null);
+    .run(input.project_id, orgId, input.title, input.file_path, input.description ?? null);
 
   return { id: result.lastInsertRowid as number, project_id: input.project_id };
 }

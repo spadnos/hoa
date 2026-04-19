@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 
 export interface LotSearchResult {
   lot_number: number;
@@ -13,7 +14,8 @@ export interface LotSearchResult {
 }
 
 export async function GET() {
-  const db = getDb();
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
 
   const rows = db.prepare(`
     SELECT
@@ -33,9 +35,9 @@ export async function GET() {
       AND lassoc.role IN ('owner', 'trustee', 'corporate_owner')
       AND lassoc.is_primary_contact = 1
     LEFT JOIN parties p ON p.id = lassoc.party_id
-    WHERE l.organization_id = 'emhoa'
+    WHERE l.organization_id = ?
     ORDER BY l.lot_number, la.address
-  `).all() as LotSearchResult[];
+  `).all(orgId) as LotSearchResult[];
 
   return NextResponse.json(rows);
 }

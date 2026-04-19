@@ -19,11 +19,13 @@ test('log_inspection records an inspection', async () => {
       date: '2026-05-01',
       outcome: 'passed',
     },
-    db
+    db,
+
+      'emhoa'
   );
   expect(result).toMatchObject({ project_id: '2026-001' });
 
-  const inspections = await listInspections({ project_id: '2026-001' }, db);
+  const inspections = await listInspections({ project_id: '2026-001' }, db, 'emhoa');
   expect(inspections).toHaveLength(1);
   expect(inspections[0].type).toBe('pre-construction');
   expect(inspections[0].outcome).toBe('passed');
@@ -38,7 +40,9 @@ test('log_inspection returns error for unknown project', async () => {
       date: '2026-05-01',
       outcome: 'passed',
     },
-    db
+    db,
+
+      'emhoa'
   );
   expect(typeof result).toBe('string');
   expect(result as string).toMatch(/not found/i);
@@ -54,16 +58,20 @@ test('log_inspection stores notes', async () => {
       outcome: 'conditional',
       notes: 'Fix rebar before pour',
     },
-    db
+    db,
+
+      'emhoa'
   );
-  const inspections = await listInspections({ project_id: '2026-001' }, db);
+  const inspections = await listInspections({ project_id: '2026-001' }, db, 'emhoa');
   expect(inspections[0].notes).toBe('Fix rebar before pour');
 });
 
 test('list_inspections returns sorted by date', async () => {
   await logInspection(
     { project_id: '2026-001', type: 'final', inspector: 'X', date: '2026-07-01', outcome: 'passed' },
-    db
+    db,
+
+      'emhoa'
   );
   await logInspection(
     {
@@ -73,9 +81,11 @@ test('list_inspections returns sorted by date', async () => {
       date: '2026-05-01',
       outcome: 'passed',
     },
-    db
+    db,
+
+      'emhoa'
   );
-  const inspections = await listInspections({ project_id: '2026-001' }, db);
+  const inspections = await listInspections({ project_id: '2026-001' }, db, 'emhoa');
   expect(inspections[0].date).toBe('2026-05-01');
   expect(inspections[1].date).toBe('2026-07-01');
 });

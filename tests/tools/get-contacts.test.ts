@@ -11,7 +11,7 @@ beforeEach(() => {
 });
 
 test('returns parsed contact data', async () => {
-  const result = await getContacts(db);
+  const result = await getContacts(db, 'emhoa');
   expect(result).toMatchObject({
     acc_members: [{ name: 'Jane Doe', role: 'Chair' }],
     board_members: [{ name: 'Bob Smith', role: 'President' }],
@@ -20,7 +20,7 @@ test('returns parsed contact data', async () => {
 
 test('returns empty lists when no contacts exist', async () => {
   const emptyDb = makeTestDb();
-  const result = await getContacts(emptyDb);
+  const result = await getContacts(emptyDb, 'emhoa');
   expect(result.acc_members).toHaveLength(0);
   expect(result.board_members).toHaveLength(0);
 });

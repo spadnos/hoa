@@ -35,7 +35,8 @@ export interface AddContactInput {
 
 export async function addContact(
   input: AddContactInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ section: string; name: string } | string> {
   const groupName = input.section === 'acc' ? 'acc' : 'board';
 
@@ -43,12 +44,12 @@ export async function addContact(
     .prepare(
       `SELECT gm.id FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
-       WHERE p.organization_id = 'emhoa'
+       WHERE p.organization_id = ?
          AND gm.group_name = ?
          AND LOWER(p.name) = LOWER(?)
          AND gm.end_date IS NULL`
     )
-    .get(groupName, input.name);
+    .get(orgId, groupName, input.name);
 
   if (existing) {
     return `Contact "${input.name}" already exists in ${groupName} members`;
@@ -56,7 +57,8 @@ export async function addContact(
 
   const partyId = getOrCreateParty(
     { name: input.name, email: input.email, phone: input.phone },
-    db
+    db,
+    orgId
   );
 
   addGroupMembership({ party_id: partyId, group_name: groupName, title: input.role }, db);

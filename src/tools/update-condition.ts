@@ -24,16 +24,17 @@ export interface UpdateConditionInput {
 
 export async function updateCondition(
   input: UpdateConditionInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: number } | string> {
   const satisfiedAt = input.satisfied ? new Date().toISOString().split('T')[0] : null;
 
   const result = db
     .prepare(
       `UPDATE conditions SET satisfied_at = ?
-       WHERE id = ? AND organization_id = 'emhoa'`
+       WHERE id = ? AND organization_id = ?`
     )
-    .run(satisfiedAt, input.id);
+    .run(satisfiedAt, input.id, orgId);
 
   if (result.changes === 0) return `Condition ${input.id} not found`;
 

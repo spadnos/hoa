@@ -13,6 +13,6 @@ export const getContactsTool: Tool = {
   },
 };
 
-export async function getContacts(db: Db): Promise<HoaMembers> {
-  return getCurrentBoardAndACC(db);
+export async function getContacts(db: Db, orgId: string): Promise<HoaMembers> {
+  return getCurrentBoardAndACC(db, orgId);
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { listProjects } from '@/src/tools/list-projects';
 import { getDeadlines } from '@/src/tools/get-deadlines';
 import { getFeeLedger } from '@/src/tools/fee-ledger';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
 import type { ProjectSummary, ProjectStatus } from '@/src/types';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
@@ -91,10 +91,11 @@ export default async function AccPage() {
   if (!hasPermission(session, 'acc_manage')) redirect('/');
 
   const db = getDb();
+  const orgId = session?.organizationId ?? ORG_ID;
   const [projects, deadlines, ledger] = await Promise.all([
-    listProjects({}, db),
-    getDeadlines({ days_ahead: 90 }, db),
-    getFeeLedger(db),
+    listProjects({}, db, orgId),
+    getDeadlines({ days_ahead: 90 }, db, orgId),
+    getFeeLedger(db, orgId),
   ]);
 
   const activeProjects = projects.filter((p) => p.status !== 'complete');

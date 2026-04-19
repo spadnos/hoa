@@ -32,11 +32,12 @@ export interface UpdateProjectInput {
 
 export async function updateProject(
   input: UpdateProjectInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: string } | string> {
   const existing = db
-    .prepare(`SELECT id, owner_party_id, designer_party_id, contractor_party_id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(input.id) as { id: string; owner_party_id: number | null; designer_party_id: number | null; contractor_party_id: number | null } | undefined;
+    .prepare(`SELECT id, owner_party_id, designer_party_id, contractor_party_id FROM projects WHERE id = ? AND organization_id = ?`)
+    .get(input.id, orgId) as { id: string; owner_party_id: number | null; designer_party_id: number | null; contractor_party_id: number | null } | undefined;
   if (!existing) return `Project ${input.id} not found`;
 
   const { fees, owner, designer, contractor, ...rest } = input.fields;
@@ -123,10 +124,10 @@ export async function updateProject(
     db.prepare(`DELETE FROM fees WHERE project_id = ?`).run(input.id);
     const ins = db.prepare(
       `INSERT INTO fees (project_id, organization_id, description, amount, due_at, paid_at)
-       VALUES (?, 'emhoa', ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`
     );
     for (const f of fees) {
-      ins.run(input.id, f.description, f.amount, f.due_at, f.paid ?? null);
+      ins.run(input.id, orgId, f.description, f.amount, f.due_at, f.paid ?? null);
     }
   }
 

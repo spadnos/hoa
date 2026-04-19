@@ -120,11 +120,12 @@ export function rowToProject(
 
 export async function getProject(
   input: GetProjectInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<Project | string> {
   const row = db
-    .prepare(`${PROJECT_JOIN_SQL} WHERE p.id = ? AND p.organization_id = 'emhoa'`)
-    .get(input.id) as ProjectRow | undefined;
+    .prepare(`${PROJECT_JOIN_SQL} WHERE p.id = ? AND p.organization_id = ?`)
+    .get(input.id, orgId) as ProjectRow | undefined;
 
   if (!row) return `Project ${input.id} not found`;
 

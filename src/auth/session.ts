@@ -3,6 +3,7 @@ import type { Permission } from './permissions';
 
 export interface SessionUser {
   partyId: number;
+  organizationId: string;
   name: string;
   permissions: Permission[];
 }

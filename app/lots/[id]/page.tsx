@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 import { getLotById } from '@/src/tools/get-lots';
 import { listProjects } from '@/src/tools/list-projects';
 import StatusBadge from '@/app/components/StatusBadge';
@@ -62,11 +63,12 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
   const numId = parseInt(id, 10);
   if (isNaN(numId)) notFound();
 
-  const db = getDb();
-  const lot = getLotById(numId, db);
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
+  const lot = getLotById(numId, db, orgId);
   if (!lot) notFound();
 
-  const projects = await listProjects({ lot: lot.lot_number }, db);
+  const projects = await listProjects({ lot: lot.lot_number }, db, orgId);
 
   return (
     <div className="max-w-5xl mx-auto">

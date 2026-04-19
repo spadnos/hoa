@@ -37,7 +37,7 @@ export interface EditMemberInput {
   lot?: number;
 }
 
-export async function editMember(input: EditMemberInput, db: Db): Promise<{ message: string }> {
+export async function editMember(input: EditMemberInput, db: Db, orgId: string): Promise<{ message: string }> {
   const partyFields: string[] = [];
   const partyParams: unknown[] = [];
 
@@ -48,7 +48,7 @@ export async function editMember(input: EditMemberInput, db: Db): Promise<{ mess
 
   if (partyFields.length > 0) {
     partyParams.push(input.id);
-    db.prepare(`UPDATE parties SET ${partyFields.join(', ')} WHERE id = ? AND organization_id = 'emhoa'`).run(...partyParams);
+    db.prepare(`UPDATE parties SET ${partyFields.join(', ')} WHERE id = ? AND organization_id = ?`).run(...partyParams, orgId);
   }
 
   if (input.role !== undefined || input.is_primary_contact !== undefined || input.mailing_address !== undefined) {
@@ -74,7 +74,8 @@ export async function editMember(input: EditMemberInput, db: Db): Promise<{ mess
                       WHERE party_id = ? AND end_date IS NULL`;
       assocParams.push(input.id);
       if (input.lot !== undefined) {
-        assocSql += ` AND lot_id = (SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?)`;
+        assocSql += ` AND lot_id = (SELECT id FROM lots WHERE organization_id = ? AND lot_number = ?)`;
+        assocParams.push(orgId);
         assocParams.push(input.lot);
       }
       db.prepare(assocSql).run(...assocParams);

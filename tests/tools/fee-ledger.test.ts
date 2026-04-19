@@ -9,7 +9,7 @@ beforeEach(() => {
 });
 
 test('returns zero totals when no fees exist', async () => {
-  const result = await getFeeLedger(db);
+  const result = await getFeeLedger(db, 'emhoa');
   expect(result.total_outstanding).toBe(0);
   expect(result.projects).toHaveLength(0);
 });
@@ -25,7 +25,7 @@ test('returns correct unpaid totals for a project', async () => {
     ],
   });
 
-  const result = await getFeeLedger(db);
+  const result = await getFeeLedger(db, 'emhoa');
   expect(result.total_outstanding).toBe(5500);
   expect(result.projects).toHaveLength(1);
   expect(result.projects[0].project_id).toBe('2026-001');
@@ -44,7 +44,7 @@ test('excludes paid fees from totals', async () => {
     ],
   });
 
-  const result = await getFeeLedger(db);
+  const result = await getFeeLedger(db, 'emhoa');
   expect(result.total_outstanding).toBe(3500);
   expect(result.projects[0].unpaid_fees).toHaveLength(1);
   expect(result.projects[0].unpaid_fees[0].description).toBe('Compliance');
@@ -64,7 +64,7 @@ test('aggregates fees across multiple projects', async () => {
     fees: [{ description: 'Fee B', amount: 500, due_at: 'preliminary_review', paid: null }],
   });
 
-  const result = await getFeeLedger(db);
+  const result = await getFeeLedger(db, 'emhoa');
   expect(result.total_outstanding).toBe(1500);
   expect(result.projects).toHaveLength(2);
 });
@@ -77,7 +77,7 @@ test('returns empty when all fees are paid', async () => {
     fees: [{ description: 'Fee A', amount: 1000, due_at: 'preliminary_review', paid: '2026-03-01' }],
   });
 
-  const result = await getFeeLedger(db);
+  const result = await getFeeLedger(db, 'emhoa');
   expect(result.total_outstanding).toBe(0);
   expect(result.projects).toHaveLength(0);
 });

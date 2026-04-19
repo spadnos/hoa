@@ -112,14 +112,14 @@ function generateId(db: Db): string {
   return `${year}-${String(next).padStart(3, '0')}`;
 }
 
-function getOrCreateLot(lotNumber: number, db: Db): number {
+function getOrCreateLot(lotNumber: number, db: Db, orgId: string): number {
   const existing = db
-    .prepare(`SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?`)
-    .get(lotNumber) as { id: number } | undefined;
+    .prepare(`SELECT id FROM lots WHERE organization_id = ? AND lot_number = ?`)
+    .get(orgId, lotNumber) as { id: number } | undefined;
   if (existing) return existing.id;
   const r = db
-    .prepare(`INSERT INTO lots (organization_id, lot_number) VALUES ('emhoa', ?)`)
-    .run(lotNumber);
+    .prepare(`INSERT INTO lots (organization_id, lot_number) VALUES (?, ?)`)
+    .run(orgId, lotNumber);
   return r.lastInsertRowid as number;
 }
 
@@ -136,11 +136,12 @@ function getOrCreateLotAddress(lotId: number, address: string, db: Db): number {
 
 export async function createProject(
   input: CreateProjectInput,
-  db: Db
+  db: Db,
+  orgId: string
 ): Promise<{ id: string } | string> {
   try {
     const id = generateId(db);
-    const lotId = getOrCreateLot(input.lot, db);
+    const lotId = getOrCreateLot(input.lot, db, orgId);
     const lotAddressId = getOrCreateLotAddress(lotId, input.address, db);
 
     const ownerNotes = input.owner.mailing_address
@@ -148,7 +149,8 @@ export async function createProject(
       : undefined;
     const ownerPartyId = getOrCreateParty(
       { name: input.owner.name, email: input.owner.email, phone: input.owner.phone },
-      db
+      db,
+      orgId
     );
 
     let designerPartyId: number | null = null;
@@ -156,7 +158,8 @@ export async function createProject(
       const notes = input.designer.company ? `Company: ${input.designer.company}` : undefined;
       designerPartyId = getOrCreateParty(
         { name: input.designer.name, email: input.designer.email, phone: input.designer.phone, notes },
-        db
+        db,
+        orgId
       );
     }
 
@@ -165,16 +168,18 @@ export async function createProject(
       const notes = input.contractor.company ? `Company: ${input.contractor.company}` : undefined;
       contractorPartyId = getOrCreateParty(
         { name: input.contractor.name, email: input.contractor.email, phone: input.contractor.phone, notes },
-        db
+        db,
+        orgId
       );
     }
 
     db.prepare(
       `INSERT INTO projects (id, organization_id, lot_id, lot_address_id, type, status, submitted,
         owner_party_id, designer_party_id, contractor_party_id)
-       VALUES (?, 'emhoa', ?, ?, ?, 'inquiry', ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, 'inquiry', ?, ?, ?, ?)`
     ).run(
       id,
+      orgId,
       lotId,
       lotAddressId,
       input.type,
@@ -186,10 +191,10 @@ export async function createProject(
 
     const insertFee = db.prepare(
       `INSERT INTO fees (project_id, organization_id, description, amount, due_at, paid_at)
-       VALUES (?, 'emhoa', ?, ?, ?, NULL)`
+       VALUES (?, ?, ?, ?, ?, NULL)`
     );
     for (const fee of DEFAULT_FEES[input.type]) {
-      insertFee.run(id, fee.description, fee.amount, fee.due_at);
+      insertFee.run(id, orgId, fee.description, fee.amount, fee.due_at);
     }
 
     return { id };

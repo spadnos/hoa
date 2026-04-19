@@ -44,13 +44,13 @@ export interface AddPartyAffiliationInput {
   title?: string;
 }
 
-export function createParty(input: CreatePartyInput, db: Db): { id: number } {
+export function createParty(input: CreatePartyInput, db: Db, orgId: string): { id: number } {
   const result = db
     .prepare(
       `INSERT INTO parties (organization_id, type, name, email, phone, notes)
-       VALUES ('emhoa', ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(
+    .run(orgId,
       input.type,
       input.name,
       input.email ?? null,
@@ -69,7 +69,7 @@ export function createParty(input: CreatePartyInput, db: Db): { id: number } {
   return { id };
 }
 
-export function updateParty(id: number, input: UpdatePartyInput, db: Db): { message: string } {
+export function updateParty(id: number, input: UpdatePartyInput, db: Db, orgId: string): { message: string } {
   const fields: string[] = [];
   const params: unknown[] = [];
 
@@ -80,7 +80,7 @@ export function updateParty(id: number, input: UpdatePartyInput, db: Db): { mess
 
   if (fields.length > 0) {
     params.push(id);
-    db.prepare(`UPDATE parties SET ${fields.join(', ')} WHERE id = ? AND organization_id = 'emhoa'`).run(...params);
+    db.prepare(`UPDATE parties SET ${fields.join(', ')} WHERE id = ? AND organization_id = ?`).run(...params, orgId);
   }
 
   if (input.org_type !== undefined || 'website' in input) {
@@ -100,23 +100,23 @@ export function updateParty(id: number, input: UpdatePartyInput, db: Db): { mess
   return { message: `Updated party ${id}` };
 }
 
-export function deleteParty(id: number, db: Db): { message: string } {
+export function deleteParty(id: number, db: Db, orgId: string): { message: string } {
   const result = db
-    .prepare(`DELETE FROM parties WHERE id = ? AND organization_id = 'emhoa'`)
-    .run(id);
+    .prepare(`DELETE FROM parties WHERE id = ? AND organization_id = ?`)
+    .run(id, orgId);
   if (result.changes === 0) return { message: `Party ${id} not found` };
   return { message: `Deleted party ${id}` };
 }
 
-export function addLotAssociation(input: AddLotAssociationInput, db: Db): { id: number } {
+export function addLotAssociation(input: AddLotAssociationInput, db: Db, orgId: string): { id: number } {
   let lotRow = db
-    .prepare(`SELECT id FROM lots WHERE organization_id = 'emhoa' AND lot_number = ?`)
-    .get(input.lot_number) as { id: number } | undefined;
+    .prepare(`SELECT id FROM lots WHERE organization_id = ? AND lot_number = ?`)
+    .get(orgId, input.lot_number) as { id: number } | undefined;
 
   if (!lotRow) {
     const r = db
-      .prepare(`INSERT INTO lots (organization_id, lot_number) VALUES ('emhoa', ?)`)
-      .run(input.lot_number);
+      .prepare(`INSERT INTO lots (organization_id, lot_number) VALUES (?, ?)`)
+      .run(orgId, input.lot_number);
     lotRow = { id: r.lastInsertRowid as number };
   }
 
@@ -199,22 +199,23 @@ export function removePartyAffiliation(id: number, db: Db): { message: string } 
 
 export function getOrCreateParty(
   input: { name: string; email?: string | null; phone?: string | null; notes?: string | null },
-  db: Db
+  db: Db,
+  orgId: string
 ): number {
   if (input.email) {
     const existing = db
-      .prepare(`SELECT id FROM parties WHERE organization_id = 'emhoa' AND email = ? AND type = 'person'`)
-      .get(input.email) as { id: number } | undefined;
+      .prepare(`SELECT id FROM parties WHERE organization_id = ? AND email = ? AND type = 'person'`)
+      .get(orgId, input.email) as { id: number } | undefined;
     if (existing) return existing.id;
   }
 
   const existing = db
-    .prepare(`SELECT id FROM parties WHERE organization_id = 'emhoa' AND name = ? AND type = 'person' AND email IS NULL`)
-    .get(input.name) as { id: number } | undefined;
+    .prepare(`SELECT id FROM parties WHERE organization_id = ? AND name = ? AND type = 'person' AND email IS NULL`)
+    .get(orgId, input.name) as { id: number } | undefined;
   if (existing && !input.email) return existing.id;
 
   const r = db
-    .prepare(`INSERT INTO parties (organization_id, type, name, email, phone, notes) VALUES ('emhoa', 'person', ?, ?, ?, ?)`)
-    .run(input.name, input.email ?? null, input.phone ?? null, input.notes ?? null);
+    .prepare(`INSERT INTO parties (organization_id, type, name, email, phone, notes) VALUES (?, 'person', ?, ?, ?, ?)`)
+    .run(orgId, input.name, input.email ?? null, input.phone ?? null, input.notes ?? null);
   return r.lastInsertRowid as number;
 }

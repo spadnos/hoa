@@ -1,13 +1,14 @@
 import { NextResponse } from 'next/server';
 import { listProjects } from '@/src/tools/list-projects';
 import { createProject } from '@/src/tools/create-project';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 
 export async function GET() {
-  const db = getDb();
-  const projects = await listProjects({}, db);
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
+  const projects = await listProjects({}, db, orgId);
   return NextResponse.json(projects);
 }
 
@@ -18,6 +19,7 @@ export async function POST(req: Request) {
   }
 
   const db = getDb();
+  const orgId = session.organizationId;
   const body = await req.json();
 
   if (!hasPermission(session, 'acc_manage')) {
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const result = await createProject(body, db);
+  const result = await createProject(body, db, orgId);
   if (typeof result === 'string') {
     return NextResponse.json({ error: result }, { status: 400 });
   }

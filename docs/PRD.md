@@ -309,22 +309,22 @@ _No approval required for: removing dead branches within 30 ft of house below 5�
 
 ## 8. Technical Constraints and Considerations
 
-### POC Stack
+### Current Stack (Phase 1)
 
 - **Runtime:** Node.js / TypeScript
-- **Server:** Express
-- **Database:** SQLite3 — chosen over YAML file storage to minimize throwaway code and keep the schema close to what Supabase/PostgreSQL will require
+- **Framework:** Next.js (App Router) — adopted early for its first-class Supabase Auth helpers and clean handling of AI streaming responses; replaces the originally planned Express + vanilla HTML approach
+- **Database:** SQLite3 (better-sqlite3) — chosen over YAML file storage to minimize throwaway code and keep the schema close to what Supabase/PostgreSQL will require
 - **AI:** Anthropic Claude API with tool use and SSE streaming
-- **Frontend:** Vanilla HTML/CSS/JS (local only, no hosting required)
+- **Frontend:** React + Tailwind CSS + shadcn/ui
 
-SQLite3 is the right POC choice: it's a real relational database with SQL semantics, the schema will translate directly to PostgreSQL/Supabase with minimal rework, and it avoids investing in file-parsing infrastructure that gets discarded.
+SQLite3 is the right Phase 1 choice: it's a real relational database with SQL semantics, the schema will translate directly to PostgreSQL/Supabase with minimal rework, and it avoids investing in file-parsing infrastructure that gets discarded.
 
 ### Production Stack (Phase 2+)
 
 - **Database & Auth:** Supabase (PostgreSQL, Row Level Security, built-in auth) — direct migration path from SQLite3
 - **Hosting:** Vercel (frontend + serverless API routes)
-- **AI:** Anthropic Claude API with tool use (retained from POC)
-- **Frontend:** Next.js — Vercel-native, first-class Supabase Auth helpers via `@supabase/ssr`, App Router handles AI streaming responses cleanly
+- **AI:** Anthropic Claude API with tool use (retained from Phase 1)
+- **Frontend:** Next.js — already in use; Vercel-native, first-class Supabase Auth helpers via `@supabase/ssr`
 
 Alternative stacks are open for consideration, but Supabase + Vercel is the preferred path.
 
@@ -341,9 +341,8 @@ Multi-tenancy is not required for the POC but **must be designed into the schema
 
 ### Open Technical Questions
 
-- **Auth model:** Primary OAuth (Google, etc.) with magic link fallback for users without social accounts. Needs validation with the actual user base — some HOA members may resist linking social accounts.
-- **AI interface at scale:** Each user needs their own agent context. How is conversation history stored — per-user in Supabase, or ephemeral per session?
-- **Frontend framework:** Next.js is the likely choice for Vercel deployment; confirm before starting Phase 2 frontend work.
+- **Auth model:** Phase 1 uses a simple demo cookie session (hardcoded users) as a placeholder. For Phase 2, the plan is primary OAuth (Google, etc.) with magic link fallback for users without social accounts. Needs validation with the actual user base — some HOA members may resist linking social accounts.
+- **AI interface at scale:** Each user needs their own agent context. How is conversation history stored — per-user in Supabase, or ephemeral per session? Phase 1 chat is stateless (no history persistence).
 
 ---
 
@@ -409,7 +408,7 @@ Give homeowners self-service access to their own information.
 | 5   | Legal/compliance requirements (Davis-Stirling)?                | Resolved | Not a constraint for the prototype; would apply before any production deployment        |
 | 6   | POC data layer?                                                | Resolved | SQLite3 — avoids YAML throwaway code; schema translates directly to PostgreSQL/Supabase |
 | 7   | Single HOA or multi-tenant?                                    | Resolved | Multi-tenant from day one — `organization_id` on all HOA-scoped tables; POC runs single-tenant |
-| 8   | Frontend framework for Phase 2?                                | Resolved | Next.js — Vercel-native, first-class Supabase Auth helpers, App Router handles AI streaming well |
+| 8   | Frontend framework?                                            | Resolved | Next.js — adopted in Phase 1; Vercel-native, first-class Supabase Auth helpers, App Router handles AI streaming well |
 | 9   | Auth model for non-technical users?                            | Partially resolved | Primary: OAuth providers (Google, etc.); fallback: magic links for users without social accounts. Needs validation with actual user base before committing. |
 
 ---

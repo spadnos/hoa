@@ -20,7 +20,8 @@ interface SummaryRow {
 export async function listUserProjects(
   db: Db,
   partyId: number,
-  isManager: boolean
+  isManager: boolean,
+  orgId: string
 ): Promise<UserProjectSummary[]> {
   let sql: string;
   let params: unknown[];
@@ -31,17 +32,17 @@ export async function listUserProjects(
       FROM projects p
       JOIN lots l ON l.id = p.lot_id
       LEFT JOIN lot_addresses la ON la.id = p.lot_address_id
-      WHERE p.organization_id = 'emhoa'
+      WHERE p.organization_id = ?
         AND p.status != 'complete'
       ORDER BY p.id`;
-    params = [];
+    params = [orgId];
   } else {
     sql = `
       SELECT p.id, l.lot_number, la.address, p.type, p.status
       FROM projects p
       JOIN lots l ON l.id = p.lot_id
       LEFT JOIN lot_addresses la ON la.id = p.lot_address_id
-      WHERE p.organization_id = 'emhoa'
+      WHERE p.organization_id = ?
         AND p.status != 'complete'
         AND (
           EXISTS (
@@ -57,7 +58,7 @@ export async function listUserProjects(
           )
         )
       ORDER BY p.id`;
-    params = [partyId, partyId, partyId, partyId, partyId];
+    params = [orgId, partyId, partyId, partyId, partyId, partyId];
   }
 
   const rows = db.prepare(sql).all(...params) as SummaryRow[];

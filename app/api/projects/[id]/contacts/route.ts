@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 import { getOrCreateParty } from '@/src/tools/manage-parties';
 
 export async function POST(
@@ -7,7 +8,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: project_id } = await params;
-  const db = getDb();
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
   const body = await req.json();
   const { role_label, party_id, name, email, phone, company } = body;
 
@@ -16,8 +18,8 @@ export async function POST(
   }
 
   const project = db
-    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = 'emhoa'`)
-    .get(project_id);
+    .prepare(`SELECT id FROM projects WHERE id = ? AND organization_id = ?`)
+    .get(project_id, orgId);
   if (!project) {
     return NextResponse.json({ error: 'Project not found' }, { status: 404 });
   }
@@ -26,8 +28,8 @@ export async function POST(
 
   if (party_id) {
     const party = db
-      .prepare(`SELECT id FROM parties WHERE id = ? AND organization_id = 'emhoa'`)
-      .get(party_id);
+      .prepare(`SELECT id FROM parties WHERE id = ? AND organization_id = ?`)
+      .get(party_id, orgId);
     if (!party) {
       return NextResponse.json({ error: 'Party not found' }, { status: 404 });
     }
@@ -37,7 +39,7 @@ export async function POST(
       return NextResponse.json({ error: 'Either party_id or name is required' }, { status: 400 });
     }
     const notes = company ? `Company: ${company}` : null;
-    resolvedPartyId = getOrCreateParty({ name, email, phone, notes }, db);
+    resolvedPartyId = getOrCreateParty({ name, email, phone, notes }, db, orgId);
   }
 
   try {

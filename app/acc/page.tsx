@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { FileText, BookOpen, ClipboardList } from 'lucide-react';
 import { getContacts } from '@/src/tools/get-contacts';
 import { listUserProjects } from '@/src/tools/list-user-projects';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import ContactsCard from '../components/ContactsCard';
@@ -63,11 +63,13 @@ const FAQS = [
 
 export default async function AccPublicPage() {
   const db = getDb();
-  const [contacts, session] = await Promise.all([getContacts(db), getSession()]);
+  const session = await getSession();
+  const orgId = session?.organizationId ?? ORG_ID;
+  const contacts = await getContacts(db, orgId);
 
   const isManager = hasPermission(session, 'acc_manage');
   const userProjects = session
-    ? await listUserProjects(db, session.partyId, isManager)
+    ? await listUserProjects(db, session.partyId, isManager, orgId)
     : [];
 
   return (

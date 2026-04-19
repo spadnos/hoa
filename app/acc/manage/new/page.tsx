@@ -1,10 +1,12 @@
 import Link from 'next/link';
-import { getDb } from '@/src/db';
+import { getDb, ORG_ID } from '@/src/db';
+import { getSession } from '@/src/auth/session';
 import NewProjectForm from '@/app/components/NewProjectForm';
 import type { LotSearchResult } from '@/app/api/lots/route';
 
 export default async function NewProjectPage() {
-  const db = getDb();
+  const [db, session] = [getDb(), await getSession()];
+  const orgId = session?.organizationId ?? ORG_ID;
 
   const lots = db.prepare(`
     SELECT
@@ -24,9 +26,9 @@ export default async function NewProjectPage() {
       AND lassoc.role IN ('owner', 'trustee', 'corporate_owner')
       AND lassoc.is_primary_contact = 1
     LEFT JOIN parties p ON p.id = lassoc.party_id
-    WHERE l.organization_id = 'emhoa'
+    WHERE l.organization_id = ?
     ORDER BY l.lot_number, la.address
-  `).all() as LotSearchResult[];
+  `).all(orgId) as LotSearchResult[];
 
   return (
     <div className="max-w-xl">
