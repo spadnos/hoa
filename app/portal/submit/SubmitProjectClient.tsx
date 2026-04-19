@@ -11,6 +11,22 @@ interface Message {
   content: string;
 }
 
+interface SessionUsage {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
+}
+
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toLocaleString();
+}
+
+function formatCost(usd: number): string {
+  if (usd < 0.01) return '<$0.01';
+  return `$${usd.toFixed(2)}`;
+}
+
 export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
   const [selectedLotId, setSelectedLotId] = useState<number>(lots[0].id);
   const [description, setDescription] = useState('');
@@ -19,13 +35,15 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
   const [followUp, setFollowUp] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [usage, setUsage] = useState<SessionUsage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  async function streamChat(lotId: number, msgs: Message[]) {
+  async function streamChat(lotId: number, newUserText: string, currentSessionId: string | null) {
     setIsStreaming(true);
 
     const assistantMessage: Message = { role: 'assistant', content: '' };
@@ -37,7 +55,8 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           lotId,
-          messages: msgs.map((m) => ({ role: m.role, content: m.content })),
+          messages: [{ role: 'user', content: newUserText }],
+          sessionId: currentSessionId,
         }),
       });
 
@@ -69,7 +88,7 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
           if (data === '[DONE]') break;
 
           try {
-            const event = JSON.parse(data) as { type: string; text?: string; projectId?: string; message?: string };
+            const event = JSON.parse(data) as { type: string; text?: string; projectId?: string; message?: string; sessionId?: string; totalInputTokens?: number; totalOutputTokens?: number; totalCostUsd?: number };
             if (event.type === 'text' && event.text) {
               assistantMessage.content += event.text;
               setMessages((prev) => {
@@ -79,6 +98,14 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
               });
             } else if (event.type === 'project_created' && event.projectId) {
               setCreatedProjectId(event.projectId);
+            } else if (event.type === 'session_id' && event.sessionId && !currentSessionId) {
+              setSessionId(event.sessionId);
+            } else if (event.type === 'usage') {
+              setUsage({
+                totalInputTokens: event.totalInputTokens ?? 0,
+                totalOutputTokens: event.totalOutputTokens ?? 0,
+                totalCostUsd: event.totalCostUsd ?? 0,
+              });
             }
           } catch {
             // ignore parse errors
@@ -100,22 +127,18 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
     const text = description.trim();
     if (!text) return;
 
-    const userMsg: Message = { role: 'user', content: text };
-    const initialMessages: Message[] = [userMsg];
-    setMessages(initialMessages);
+    setMessages([{ role: 'user', content: text }]);
     setPhase('chat');
-    await streamChat(selectedLotId, initialMessages);
+    await streamChat(selectedLotId, text, null);
   }
 
   async function handleFollowUp() {
     const text = followUp.trim();
     if (!text || isStreaming) return;
 
-    const userMsg: Message = { role: 'user', content: text };
-    const updatedMessages = [...messages, userMsg];
-    setMessages(updatedMessages);
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
     setFollowUp('');
-    await streamChat(selectedLotId, updatedMessages);
+    await streamChat(selectedLotId, text, sessionId);
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
@@ -251,26 +274,33 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
 
       {/* Follow-up input */}
       {!createdProjectId && (
-        <div className="flex gap-3">
-          <textarea
-            value={followUp}
-            onChange={(e) => setFollowUp(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={2}
-            placeholder="Reply… (Enter to send, Shift+Enter for newline)"
-            className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
-            style={{ '--tw-ring-color': 'var(--hoa-green)' } as React.CSSProperties}
-            disabled={isStreaming}
-          />
-          <button
-            onClick={handleFollowUp}
-            disabled={isStreaming || !followUp.trim()}
-            className="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-opacity disabled:opacity-40"
-            style={{ backgroundColor: 'var(--hoa-green)' }}
-          >
-            {isStreaming ? '…' : 'Send'}
-          </button>
-        </div>
+        <>
+          <div className="flex gap-3">
+            <textarea
+              value={followUp}
+              onChange={(e) => setFollowUp(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={2}
+              placeholder="Reply… (Enter to send, Shift+Enter for newline)"
+              className="flex-1 resize-none rounded-xl border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:border-transparent"
+              style={{ '--tw-ring-color': 'var(--hoa-green)' } as React.CSSProperties}
+              disabled={isStreaming}
+            />
+            <button
+              onClick={handleFollowUp}
+              disabled={isStreaming || !followUp.trim()}
+              className="px-5 py-2.5 rounded-xl text-white text-sm font-medium transition-opacity disabled:opacity-40"
+              style={{ backgroundColor: 'var(--hoa-green)' }}
+            >
+              {isStreaming ? '…' : 'Send'}
+            </button>
+          </div>
+          {usage && (
+            <p className="text-xs text-gray-400 mt-1.5 px-1">
+              Session: {formatTokens(usage.totalInputTokens + usage.totalOutputTokens)} tokens · ~{formatCost(usage.totalCostUsd)}
+            </p>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,22 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { ChatSession } from '@/src/types';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
-interface ChatSession {
-  id: string;
-  label: string;
+interface SessionUsage {
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  totalCostUsd: number;
 }
-
-const PLACEHOLDER_HISTORY: ChatSession[] = [
-  { id: '1', label: 'Fee schedule for 2025' },
-  { id: '2', label: 'Pool project timeline' },
-  { id: '3', label: 'ACC approval process' },
-];
 
 function parseMarkdown(text: string): string {
   return text
@@ -26,20 +22,72 @@ function parseMarkdown(text: string): string {
     .replace(/\n/g, '<br>');
 }
 
+function formatTokens(n: number): string {
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return n.toLocaleString();
+}
+
+function formatCost(usd: number): string {
+  if (usd < 0.01) return '<$0.01';
+  return `$${usd.toFixed(2)}`;
+}
+
+function formatDate(iso: string): string {
+  const d = new Date(iso);
+  const now = new Date();
+  const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000);
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return d.toLocaleDateString(undefined, { weekday: 'short' });
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
 export default function ChatPage() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [usage, setUsage] = useState<SessionUsage | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    fetch('/api/chat/sessions')
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: ChatSession[]) => setSessions(data))
+      .catch(() => {});
+  }, []);
+
   function startNewChat() {
     setMessages([]);
     setInput('');
     setIsStreaming(false);
+    setSessionId(null);
+    setUsage(null);
+  }
+
+  async function loadSession(id: string) {
+    try {
+      const r = await fetch(`/api/chat/sessions/${id}`);
+      if (!r.ok) return;
+      const rows = (await r.json()) as { role: string; content: string }[];
+      setMessages(rows.map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content })));
+      setSessionId(id);
+      const s = sessions.find((s) => s.id === id);
+      if (s) {
+        setUsage({
+          totalInputTokens: s.total_input_tokens,
+          totalOutputTokens: s.total_output_tokens,
+          totalCostUsd: s.total_cost_usd,
+        });
+      }
+    } catch {
+      // ignore
+    }
   }
 
   async function sendMessage() {
@@ -54,13 +102,16 @@ export default function ChatPage() {
     const assistantMessage: Message = { role: 'assistant', content: '' };
     setMessages([...newMessages, assistantMessage]);
 
+    // When continuing a session, send only the new message; server loads history.
+    const messagesToSend = sessionId
+      ? [{ role: 'user' as const, content: text }]
+      : [{ role: 'user' as const, content: text }];
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: newMessages.map((m) => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify({ messages: messagesToSend, sessionId }),
       });
 
       const reader = response.body!.getReader();
@@ -89,6 +140,20 @@ export default function ChatPage() {
                 updated[updated.length - 1] = { ...assistantMessage };
                 return updated;
               });
+            } else if (event.type === 'session_id' && !sessionId) {
+              setSessionId(event.sessionId);
+            } else if (event.type === 'usage') {
+              const newSession: SessionUsage = {
+                totalInputTokens: event.totalInputTokens,
+                totalOutputTokens: event.totalOutputTokens,
+                totalCostUsd: event.totalCostUsd,
+              };
+              setUsage(newSession);
+              // Refresh session list to show the new/updated session
+              fetch('/api/chat/sessions')
+                .then((r) => r.ok ? r.json() : [])
+                .then((data: ChatSession[]) => setSessions(data))
+                .catch(() => {});
             }
           } catch {
             // ignore parse errors
@@ -129,19 +194,33 @@ export default function ChatPage() {
 
         <div className="flex-1 overflow-y-auto">
           <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-2 px-1">Recent</p>
-          <ul className="space-y-1">
-            {PLACEHOLDER_HISTORY.map((session) => (
-              <li key={session.id}>
-                <button
-                  className="w-full text-left px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-100 truncate transition-colors"
-                  title={session.label}
-                  disabled
-                >
-                  {session.label}
-                </button>
-              </li>
-            ))}
-          </ul>
+          {sessions.length === 0 ? (
+            <p className="text-xs text-gray-400 px-1">No sessions yet</p>
+          ) : (
+            <ul className="space-y-1">
+              {sessions.map((s) => (
+                <li key={s.id}>
+                  <button
+                    onClick={() => loadSession(s.id)}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm truncate transition-colors ${
+                      s.id === sessionId
+                        ? 'bg-gray-200 text-gray-900'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                    title={s.label ?? 'Chat session'}
+                  >
+                    <span className="block truncate">{s.label ?? 'Untitled'}</span>
+                    <span className="block text-xs text-gray-400 mt-0.5 flex gap-1">
+                      <span>{formatDate(s.updated_at)}</span>
+                      {s.chat_type === 'portal' && (
+                        <span className="text-blue-400">· portal</span>
+                      )}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </div>
 
@@ -189,6 +268,11 @@ export default function ChatPage() {
             {isStreaming ? '…' : 'Send'}
           </button>
         </div>
+        {usage && (
+          <p className="text-xs text-gray-400 mt-1.5 px-1">
+            Session: {formatTokens(usage.totalInputTokens + usage.totalOutputTokens)} tokens · ~{formatCost(usage.totalCostUsd)}
+          </p>
+        )}
       </div>
     </div>
   );

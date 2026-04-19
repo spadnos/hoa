@@ -1,5 +1,37 @@
 # Possible Enhancements
 
+## Fix Management Contacts
+
+They are currently hard-coded, but should be from the management group.
+
+## Agents
+
+Handle common tasks like updating all the things that need to be updated when a property is sold.
+
+## Group ordering
+
+Some groups, like the board, should be presented in a specific order.
+
+## Dirctory Enhancements
+
+- Display alphabetically, this might require splitting names to first, last.
+- Include non-owners, such as employees and management.
+- Chnage filters to be members, non-members
+- Maybe color code members vs non-members?
+
+## Lot photos
+
+Allow people to add a profile photo for their house/lot.
+
+## Plan review agent
+
+Add an agent that will review plans attached to a project and compare them to the guidelines.
+
+## Announcements
+
+- Add an optional date or link to "events" (which don't exist yet) for things like meetings.
+- Add attachments or links to docs for things like "Board Meeting Minutes" or updated CCRs.
+
 ## Add Guardrails on agent so it can't be used as a general chatbot
 
 ## Separate Data and Code
