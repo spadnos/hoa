@@ -168,7 +168,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_parties_email ON parties(email) WHERE emai
 
 ---
 
-### [ ] FR-3: Lot Ownership History UI (Small)
+### [x] FR-3: Lot Ownership History UI (Small)
 
 **What:** A timeline view of ownership/occupancy history for a lot, and a way to record move-in/move-out transitions. The `lot_associations` table already stores `start_date` and `end_date`; the UI only shows current associations.
 

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getDb, ORG_ID } from '@/src/db';
 import { getSession } from '@/src/auth/session';
+import { hasPermission } from '@/src/auth/permissions';
 import { getLotById } from '@/src/tools/get-lots';
 import { listProjects } from '@/src/tools/list-projects';
 import StatusBadge from '@/app/components/StatusBadge';
@@ -14,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import LotAssociationsClient from './LotAssociationsClient';
 
 const ROLE_LABELS: Record<string, string> = {
   owner: 'Owner',
@@ -29,33 +31,13 @@ const TYPE_LABELS: Record<string, string> = {
   landscaping: 'Landscaping',
 };
 
-function AssociationsTable({ associations }: { associations: ReturnType<typeof getLotById> extends infer T ? T extends { associations: infer A } ? A : never : never }) {
-  return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>Role</TableHead>
-          <TableHead>Name</TableHead>
-          <TableHead>Primary Contact</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {associations.map((a) => (
-          <TableRow key={a.party_id}>
-            <TableCell className="text-sm">{ROLE_LABELS[a.role] ?? a.role}</TableCell>
-            <TableCell className="text-sm">
-              <Link href={`/directory/party-${a.party_id}`} className="text-blue-600 hover:underline">
-                {a.name}
-              </Link>
-            </TableCell>
-            <TableCell className="text-sm text-gray-500">
-              {a.is_primary_contact ? 'Yes' : '—'}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
-  );
+interface HistoryRow {
+  id: number;
+  party_id: number;
+  name: string;
+  role: string;
+  start_date: string | null;
+  end_date: string | null;
 }
 
 export default async function LotDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -65,10 +47,27 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
 
   const [db, session] = [getDb(), await getSession()];
   const orgId = session?.organizationId ?? ORG_ID;
+  const isAdmin = hasPermission(session, 'admin');
   const lot = getLotById(numId, db, orgId);
   if (!lot) notFound();
 
   const projects = await listProjects({ lot: lot.lot_number }, db, orgId);
+
+  const historyRows = db
+    .prepare(
+      `SELECT la.id, la.party_id, p.name, la.role, la.start_date, la.end_date
+       FROM lot_associations la
+       JOIN parties p ON p.id = la.party_id
+       WHERE la.lot_id = ?
+       ORDER BY COALESCE(la.start_date, '0000-00-00') DESC, la.id DESC`
+    )
+    .all(numId) as HistoryRow[];
+
+  const parties = isAdmin
+    ? (db
+        .prepare(`SELECT id, name FROM parties WHERE organization_id = ? ORDER BY name`)
+        .all(orgId) as { id: number; name: string }[])
+    : [];
 
   return (
     <div className="max-w-5xl mx-auto">
@@ -100,11 +99,12 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
                 <CardTitle className="text-base">Current Associations</CardTitle>
               </CardHeader>
               <CardContent>
-                {lot.associations.length === 0 ? (
-                  <p className="text-sm text-gray-400">No current associations.</p>
-                ) : (
-                  <AssociationsTable associations={lot.associations} />
-                )}
+                <LotAssociationsClient
+                  associations={lot.associations}
+                  lotId={lot.id}
+                  isAdmin={isAdmin}
+                  parties={parties}
+                />
               </CardContent>
             </Card>
           </>
@@ -122,16 +122,55 @@ export default async function LotDetailPage({ params }: { params: Promise<{ id: 
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  {assocs.length === 0 ? (
-                    <p className="text-sm text-gray-400">No current associations.</p>
-                  ) : (
-                    <AssociationsTable associations={assocs} />
-                  )}
+                  <LotAssociationsClient
+                    associations={assocs}
+                    lotId={lot.id}
+                    isAdmin={isAdmin}
+                    parties={parties}
+                  />
                 </CardContent>
               </Card>
             );
           })
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Ownership History</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {historyRows.length === 0 ? (
+              <p className="text-sm text-gray-400">No history recorded.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Start</TableHead>
+                    <TableHead>End</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historyRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="text-sm">{ROLE_LABELS[row.role] ?? row.role}</TableCell>
+                      <TableCell className="text-sm">
+                        <Link href={`/directory/party-${row.party_id}`} className="text-blue-600 hover:underline">
+                          {row.name}
+                        </Link>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">{row.start_date ?? '—'}</TableCell>
+                      <TableCell className="text-sm text-gray-500">
+                        {row.end_date ?? <span className="text-green-600">Current</span>}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
 
         <Card>
           <CardHeader>

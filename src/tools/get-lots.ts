@@ -15,6 +15,7 @@ interface LotAddressRow {
 }
 
 interface LotAssocRow {
+  id: number;
   lot_id: number;
   lot_address_id: number | null;
   party_id: number;
@@ -23,12 +24,21 @@ interface LotAssocRow {
   name: string;
 }
 
+export interface LotAssociation {
+  id: number;
+  party_id: number;
+  name: string;
+  role: string;
+  is_primary_contact: boolean;
+  lot_address_id: number | null;
+}
+
 export interface LotEntry {
   id: number;
   lot_number: number;
   notes: string | null;
   addresses: { id: number; address: string; unit: string | null }[];
-  associations: { party_id: number; name: string; role: string; is_primary_contact: boolean; lot_address_id: number | null }[];
+  associations: LotAssociation[];
 }
 
 function buildLotEntry(
@@ -46,6 +56,7 @@ function buildLotEntry(
     associations: assocRows
       .filter((a) => a.lot_id === row.id)
       .map((a) => ({
+        id: a.id,
         party_id: a.party_id,
         name: a.name,
         role: a.role,
@@ -70,7 +81,7 @@ export function getLots(db: Db, orgId: string): LotEntry[] {
 
   const assocRows = db
     .prepare(
-      `SELECT la.lot_id, la.lot_address_id, la.party_id, la.role, la.is_primary_contact, p.name
+      `SELECT la.id, la.lot_id, la.lot_address_id, la.party_id, la.role, la.is_primary_contact, p.name
        FROM lot_associations la
        JOIN parties p ON p.id = la.party_id
        JOIN lots l ON l.id = la.lot_id
@@ -94,7 +105,7 @@ export function getLotById(id: number, db: Db, orgId: string): LotEntry | null {
 
   const assocRows = db
     .prepare(
-      `SELECT la.lot_id, la.lot_address_id, la.party_id, la.role, la.is_primary_contact, p.name
+      `SELECT la.id, la.lot_id, la.lot_address_id, la.party_id, la.role, la.is_primary_contact, p.name
        FROM lot_associations la
        JOIN parties p ON p.id = la.party_id
        WHERE la.lot_id = ? AND la.end_date IS NULL`
