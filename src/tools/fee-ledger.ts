@@ -12,6 +12,7 @@ export const getFeeLedgerTool: Tool = {
 };
 
 interface FeeLedgerRow {
+  fee_id: number;
   project_id: string;
   lot: number;
   owner_name: string | null;
@@ -26,7 +27,7 @@ export interface ProjectFees {
   lot: number;
   owner: string;
   status: string;
-  unpaid_fees: { description: string; amount: number; due_at: string }[];
+  unpaid_fees: { id: number; description: string; amount: number; due_at: string }[];
   total: number;
 }
 
@@ -38,7 +39,7 @@ export interface FeeLedgerResult {
 export async function getFeeLedger(db: Db, orgId: string): Promise<FeeLedgerResult> {
   const rows = db
     .prepare(
-      `SELECT f.description, f.amount, f.due_at,
+      `SELECT f.id AS fee_id, f.description, f.amount, f.due_at,
               p.id AS project_id, l.lot_number AS lot, op.name AS owner_name, p.status AS project_status
        FROM fees f
        JOIN projects p ON p.id = f.project_id
@@ -64,7 +65,7 @@ export async function getFeeLedger(db: Db, orgId: string): Promise<FeeLedgerResu
       });
     }
     const entry = byProject.get(row.project_id)!;
-    entry.unpaid_fees.push({ description: row.description, amount: row.amount, due_at: row.due_at });
+    entry.unpaid_fees.push({ id: row.fee_id, description: row.description, amount: row.amount, due_at: row.due_at });
     entry.total += row.amount;
     totalOutstanding += row.amount;
   }

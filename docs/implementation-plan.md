@@ -67,7 +67,7 @@ Status values: `null | 'pending' | 'approved' | 'not_required'` (permit: `'issue
 
 ---
 
-### [ ] FR-6: Cross-Project Fee Dashboard (Small)
+### [x] FR-6: Cross-Project Fee Dashboard (Small)
 
 **What:** A dedicated page showing unpaid balances across all active projects. The per-project fee ledger exists; this aggregates it.
 
