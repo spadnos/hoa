@@ -60,6 +60,7 @@ export interface HoaContact {
 export interface HoaMembers {
   acc_members: HoaContact[];
   board_members: HoaContact[];
+  management_members: HoaContact[];
 }
 
 export interface Project {
@@ -174,6 +175,17 @@ export interface Announcement {
   visible_until: string | null;
   audience: 'public' | 'members' | 'board';
   created_at: string;
+}
+
+export interface ChatSession {
+  id: string;
+  label: string | null;
+  chat_type: 'acc' | 'portal';
+  total_input_tokens: number;
+  total_output_tokens: number;
+  total_cost_usd: number;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface GroupMembership {

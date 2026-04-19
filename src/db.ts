@@ -17,6 +17,8 @@ const MIGRATIONS = [
   { version: 9, file: '009_project_contacts.sql' },
   { version: 10, file: '010_groups_table.sql' },
   { version: 13, file: '013_announcements.sql' },
+  { version: 14, file: '014_chat_sessions.sql' },
+  { version: 15, file: '015_group_membership_sort_order.sql' },
 ];
 
 export function createDb(dbPath: string): Db {

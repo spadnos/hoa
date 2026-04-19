@@ -16,6 +16,7 @@ interface MemberRow {
   group_name: string;
   title: string | null;
   start_date: string | null;
+  sort_order: number | null;
   party_name: string;
 }
 
@@ -42,17 +43,17 @@ export default async function GroupsPage() {
 
   const memberRows = db
     .prepare(
-      `SELECT gm.id, gm.party_id, gm.group_name, gm.title, gm.start_date, p.name as party_name
+      `SELECT gm.id, gm.party_id, gm.group_name, gm.title, gm.start_date, gm.sort_order, p.name as party_name
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
        WHERE gm.end_date IS NULL AND p.organization_id = ?
-       ORDER BY gm.group_name, p.name`
+       ORDER BY gm.group_name, gm.sort_order NULLS LAST, p.name`
     )
     .all(orgId) as MemberRow[];
 
   const partyRows = db
     .prepare(
-      `SELECT id, name FROM parties WHERE organization_id = ? AND type = 'person' ORDER BY name`
+      `SELECT id, name FROM parties WHERE organization_id = ? ORDER BY name`
     )
     .all(orgId) as PartyRow[];
 

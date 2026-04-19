@@ -10,6 +10,7 @@ interface Member {
   party_name: string;
   title: string | null;
   start_date: string | null;
+  sort_order: number | null;
 }
 
 interface GroupData {
@@ -43,6 +44,24 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ end: true }),
+    });
+    startTransition(() => router.refresh());
+  }
+
+  async function handleReorder(index: number, direction: 'up' | 'down') {
+    const a = group.members[index];
+    const b = group.members[direction === 'up' ? index - 1 : index + 1];
+    const aOrder = a.sort_order ?? index + 1;
+    const bOrder = b.sort_order ?? (direction === 'up' ? index : index + 2);
+    await fetch(`/api/group-memberships/${a.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sort_order: bOrder }),
+    });
+    await fetch(`/api/group-memberships/${b.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sort_order: aOrder }),
     });
     startTransition(() => router.refresh());
   }
@@ -91,6 +110,7 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
             <table className="w-full text-sm mb-3">
               <thead>
                 <tr className="text-left text-gray-500 border-b">
+                  <th className="pb-1 w-12"></th>
                   <th className="pb-1 font-medium">Name</th>
                   <th className="pb-1 font-medium">Title</th>
                   <th className="pb-1 font-medium">Since</th>
@@ -98,8 +118,28 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
                 </tr>
               </thead>
               <tbody>
-                {group.members.map((m) => (
+                {group.members.map((m, idx) => (
                   <tr key={m.id} className="border-b border-gray-100 last:border-0">
+                    <td className="py-2 pr-1">
+                      <div className="flex flex-col gap-0.5">
+                        <button
+                          onClick={() => handleReorder(idx, 'up')}
+                          disabled={isPending || idx === 0}
+                          className="text-gray-400 hover:text-gray-700 disabled:invisible cursor-pointer leading-none"
+                          title="Move up"
+                        >
+                          ▲
+                        </button>
+                        <button
+                          onClick={() => handleReorder(idx, 'down')}
+                          disabled={isPending || idx === group.members.length - 1}
+                          className="text-gray-400 hover:text-gray-700 disabled:invisible cursor-pointer leading-none"
+                          title="Move down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </td>
                     <td className="py-2">
                       <Link
                         href={`/directory/party-${m.party_id}`}
@@ -127,7 +167,7 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
           {showForm ? (
             <form onSubmit={handleAdd} className="flex flex-wrap gap-2 items-end border-t pt-3">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-gray-500">Person</label>
+                <label className="text-xs text-gray-500">Entity</label>
                 <select
                   value={partyId}
                   onChange={(e) => setPartyId(e.target.value)}

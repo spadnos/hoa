@@ -213,9 +213,9 @@ export async function getCurrentBoardAndACC(db: Db, orgId: string): Promise<HoaM
        FROM group_memberships gm
        JOIN parties p ON p.id = gm.party_id
        WHERE p.organization_id = ?
-         AND gm.group_name IN ('acc', 'board')
+         AND gm.group_name IN ('acc', 'board', 'management')
          AND gm.end_date IS NULL
-       ORDER BY gm.group_name, p.name`
+       ORDER BY gm.group_name, gm.sort_order NULLS LAST, p.name`
     )
     .all(orgId) as Array<{ id: number; name: string; email: string | null; phone: string | null; role: string; group_name: string }>;
 
@@ -229,5 +229,6 @@ export async function getCurrentBoardAndACC(db: Db, orgId: string): Promise<HoaM
   return {
     acc_members: rows.filter((r) => r.group_name === 'acc').map(toContact),
     board_members: rows.filter((r) => r.group_name === 'board').map(toContact),
+    management_members: rows.filter((r) => r.group_name === 'management').map(toContact),
   };
 }

@@ -162,16 +162,24 @@ export function endLotAssociation(id: number, db: Db): { message: string } {
 }
 
 export function addGroupMembership(input: AddGroupMembershipInput, db: Db): { id: number } {
+  const maxRow = db
+    .prepare(
+      `SELECT MAX(sort_order) as max FROM group_memberships WHERE group_name = ? AND end_date IS NULL`
+    )
+    .get(input.group_name) as { max: number | null };
+  const sort_order = (maxRow.max ?? 0) + 1;
+
   const result = db
     .prepare(
-      `INSERT INTO group_memberships (party_id, group_name, title, start_date)
-       VALUES (?, ?, ?, ?)`
+      `INSERT INTO group_memberships (party_id, group_name, title, start_date, sort_order)
+       VALUES (?, ?, ?, ?, ?)`
     )
     .run(
       input.party_id,
       input.group_name,
       input.title ?? null,
-      input.start_date ?? null
+      input.start_date ?? null,
+      sort_order
     );
   return { id: result.lastInsertRowid as number };
 }

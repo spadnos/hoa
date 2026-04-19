@@ -17,5 +17,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ message: `Updated membership ${id}` });
   }
 
-  return NextResponse.json({ error: 'Provide end_date or end: true' }, { status: 400 });
+  if (typeof body.sort_order === 'number') {
+    db.prepare(`UPDATE group_memberships SET sort_order = ? WHERE id = ?`).run(body.sort_order, parseInt(id));
+    return NextResponse.json({ ok: true });
+  }
+
+  return NextResponse.json({ error: 'Provide end_date, end: true, or sort_order' }, { status: 400 });
 }
