@@ -192,8 +192,7 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
   );
 }
 
-export default function GroupsClient({ groups: initialGroups, parties }: Props) {
-  const [groups, setGroups] = useState(initialGroups);
+export default function GroupsClient({ groups, parties }: Props) {
   const [showNewForm, setShowNewForm] = useState(false);
   const [newName, setNewName] = useState('');
   const [newLabel, setNewLabel] = useState('');
@@ -215,11 +214,6 @@ export default function GroupsClient({ groups: initialGroups, parties }: Props) 
       setError(body.error ?? 'Failed to create group');
       return;
     }
-    const { name } = await res.json();
-    setGroups((prev) => [
-      ...prev,
-      { group_name: name, label: newLabel.trim(), description: newDescription.trim() || null, members: [] },
-    ]);
     setNewName('');
     setNewLabel('');
     setNewDescription('');
