@@ -110,12 +110,17 @@ export interface Inspection {
   created_at: string;
 }
 
+export type ProjectDocumentType = 'document' | 'plan' | 'review';
+
 export interface ProjectDocument {
   id: number;
   project_id: string;
   title: string;
   file_path: string;
   description: string | null;
+  document_type: ProjectDocumentType;
+  mime_type: string | null;
+  size_bytes: number | null;
   uploaded_at: string;
 }
 

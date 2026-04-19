@@ -5,10 +5,11 @@ import { getProject } from '@/src/tools/get-project';
 import { listConditions } from '@/src/tools/list-conditions';
 import { listInspections } from '@/src/tools/list-inspections';
 import { listProjectDocuments } from '@/src/tools/list-project-documents';
-import type { Fee, Condition, Inspection, ProjectDocument, ProjectType } from '@/src/types';
+import type { Fee, Condition, Inspection, ProjectType } from '@/src/types';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import ProjectContactsSection from '@/app/components/ProjectContactsSection';
+import ProjectDocumentsSection from '@/app/components/ProjectDocumentsSection';
 import StatusBadge from '@/app/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -223,31 +224,6 @@ function InspectionsCard({ inspections }: { inspections: Inspection[] }) {
   );
 }
 
-function DocumentsCard({ documents }: { documents: ProjectDocument[] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Documents</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {documents.length === 0 ? (
-          <p className="text-sm text-gray-400">No documents indexed.</p>
-        ) : (
-          <ul className="space-y-3">
-            {documents.map((doc) => (
-              <li key={doc.id} className="border border-gray-100 rounded-lg p-3">
-                <p className="text-sm font-medium text-gray-900">{doc.title}</p>
-                {doc.description && <p className="text-sm text-gray-500 mt-0.5">{doc.description}</p>}
-                <p className="text-xs font-mono text-gray-400 mt-1 break-all">{doc.file_path}</p>
-                <p className="text-xs text-gray-400 mt-0.5">Uploaded {formatDate(doc.uploaded_at)}</p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -265,30 +241,35 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     notFound();
   }
 
-  if (!hasPermission(session, 'acc_manage')) {
+  const isAdmin = hasPermission(session, 'acc_manage');
+
+  const contactPartyIds = [
+    project.owner?.party_id,
+    project.designer?.party_id,
+    project.contractor?.party_id,
+    ...(project.additional_contacts?.map((c) => c.party_id) ?? []),
+  ].filter((pid): pid is number => typeof pid === 'number');
+
+  let isLotParticipant = false;
+  if (!isAdmin) {
     const projectRow = db
       .prepare('SELECT lot_id FROM projects WHERE id = ?')
       .get(id) as { lot_id: number } | undefined;
 
-    const isLotParticipant =
-      projectRow &&
+    isLotParticipant =
+      !!projectRow &&
       !!db
         .prepare(
           'SELECT 1 FROM lot_associations WHERE party_id = ? AND lot_id = ? AND end_date IS NULL'
         )
-        .get(session?.partyId, projectRow.lot_id);
-
-    const contactPartyIds = [
-      project.owner?.party_id,
-      project.designer?.party_id,
-      project.contractor?.party_id,
-      ...(project.additional_contacts?.map((c) => c.party_id) ?? []),
-    ].filter((pid): pid is number => typeof pid === 'number');
+        .get(session?.partyId, projectRow?.lot_id);
 
     if (!isLotParticipant && !contactPartyIds.includes(session?.partyId ?? -1)) {
       redirect('/');
     }
   }
+
+  const canUpload = isAdmin || isLotParticipant || contactPartyIds.includes(session?.partyId ?? -1);
 
   const milestones = [
     'preliminary_approved_at',
@@ -377,7 +358,19 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <InspectionsCard inspections={inspections} />
 
         {/* Documents */}
-        <DocumentsCard documents={documents} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Documents</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProjectDocumentsSection
+              projectId={project.id}
+              initialDocuments={documents}
+              isAdmin={isAdmin}
+              canUpload={canUpload}
+            />
+          </CardContent>
+        </Card>
 
         {/* Communications placeholder */}
         <Card>

@@ -1,5 +1,6 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import type { Db } from '../db';
+import type { ProjectDocumentType } from '../types';
 
 export const addProjectDocumentTool: Tool = {
   name: 'add_project_document',
@@ -26,6 +27,7 @@ export interface AddProjectDocumentInput {
   title: string;
   file_path: string;
   description?: string;
+  document_type?: ProjectDocumentType;
 }
 
 export async function addProjectDocument(
@@ -40,10 +42,17 @@ export async function addProjectDocument(
 
   const result = db
     .prepare(
-      `INSERT INTO project_documents (project_id, organization_id, title, file_path, description)
-       VALUES (?, ?, ?, ?, ?)`
+      `INSERT INTO project_documents (project_id, organization_id, title, file_path, description, document_type)
+       VALUES (?, ?, ?, ?, ?, ?)`
     )
-    .run(input.project_id, orgId, input.title, input.file_path, input.description ?? null);
+    .run(
+      input.project_id,
+      orgId,
+      input.title,
+      input.file_path,
+      input.description ?? null,
+      input.document_type ?? 'document'
+    );
 
   return { id: result.lastInsertRowid as number, project_id: input.project_id };
 }

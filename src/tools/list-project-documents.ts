@@ -25,7 +25,7 @@ export async function listProjectDocuments(
 ): Promise<ProjectDocument[]> {
   return db
     .prepare(
-      `SELECT id, project_id, title, file_path, description, uploaded_at
+      `SELECT id, project_id, title, file_path, description, document_type, mime_type, size_bytes, uploaded_at
        FROM project_documents
        WHERE project_id = ? AND organization_id = ?
        ORDER BY uploaded_at, id`
