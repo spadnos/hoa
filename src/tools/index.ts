@@ -33,6 +33,10 @@ import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import path from 'path';
 import { getDb } from '../db';
 
+export function getHomeownerTools(): Tool[] {
+  return [getDocumentTool, createProjectTool];
+}
+
 export function getTools(): Tool[] {
   return [
     listProjectsTool,

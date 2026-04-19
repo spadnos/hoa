@@ -231,18 +231,21 @@ CREATE TABLE IF NOT EXISTS announcements (
 
 ---
 
-### [ ] FR-14: ACC Application Submission (Small)
+### [x] FR-14: ACC Application Submission (Small)
 
-**What:** A homeowner-friendly version of the project submission form. The existing `/acc/new` form has ACC-member-level fields (status, notes, etc.) that homeowners shouldn't see.
+**What:** AI-assisted homeowner project submission. Instead of a form, homeowners describe their project in plain language; an AI agent reads the design guidelines, determines whether ACC approval is needed, identifies the project type and fees, asks clarifying questions, and creates the project on confirmation.
 
 **Schema changes:** None.
 
-**Files to modify:**
-- `app/components/NewProjectForm.tsx` — accept an `isManager: boolean` prop; hide status, internal notes, and fee fields when `false`; default status to `'inquiry'`
-- `app/acc/new/page.tsx` — pass `isManager` derived from session permissions
-- `app/portal/page.tsx` — add "+ Submit ACC Application" link to `/acc/new`
+**Files created/modified:**
+- `src/homeowner-submit-prompt.ts` — dynamic system prompt with lot/owner context injected
+- `src/tools/index.ts` — added `getHomeownerTools()` (restricted to `get_document` + `create_project`)
+- `app/api/portal/chat/route.ts` — homeowner-scoped SSE chat API; verifies lot ownership, enforces tool restrictions, emits `project_created` event
+- `app/portal/submit/page.tsx` — server component; fetches homeowner lots and renders client widget
+- `app/portal/submit/SubmitProjectClient.tsx` — two-phase UI: lot picker + description intake → streaming chat conversation with project confirmation card
+- `app/portal/page.tsx` — added "Submit New Project" button to ACC Projects card
 
-**Acceptance:** A homeowner submitting via `/acc/new` sees a simplified form; status defaults to `inquiry`; ACC manager sees the full form unchanged.
+**Acceptance:** Homeowner selects their lot, describes their project, converses with the AI to clarify scope, and confirms to create the application; AI correctly identifies when no approval is needed; homeowners cannot create projects for lots they don't own.
 
 ---
 

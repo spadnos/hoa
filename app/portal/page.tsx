@@ -185,7 +185,16 @@ export default async function PortalPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">ACC Projects</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">ACC Projects</CardTitle>
+              <Link
+                href="/portal/submit"
+                className="text-xs px-3 py-1.5 rounded-lg text-white font-medium transition-opacity hover:opacity-90"
+                style={{ backgroundColor: 'var(--hoa-green)' }}
+              >
+                Submit New Project
+              </Link>
+            </div>
           </CardHeader>
           <CardContent>
             {projects.length === 0 ? (
