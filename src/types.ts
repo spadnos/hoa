@@ -1,3 +1,11 @@
+export interface Group {
+  name: string;
+  organization_id: string;
+  label: string;
+  description: string | null;
+  sort_order: number;
+}
+
 export type ProjectType =
   | 'new_residence'
   | 'minor_remodel'

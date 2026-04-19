@@ -4,6 +4,12 @@ import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import GroupsClient from './GroupsClient';
 
+interface GroupRow {
+  name: string;
+  label: string;
+  description: string | null;
+}
+
 interface MemberRow {
   id: number;
   party_id: number;
@@ -18,14 +24,21 @@ interface PartyRow {
   name: string;
 }
 
-const GROUP_ORDER = ['board', 'acc', 'management', 'utility', 'vendor'];
-
 export default async function GroupsPage() {
   const session = await getSession();
   if (!hasPermission(session, 'admin')) redirect('/');
 
   const db = getDb();
   const orgId = session?.organizationId ?? ORG_ID;
+
+  const groupRows = db
+    .prepare(
+      `SELECT name, label, description
+       FROM groups
+       WHERE organization_id = ?
+       ORDER BY sort_order, name`
+    )
+    .all(orgId) as GroupRow[];
 
   const memberRows = db
     .prepare(
@@ -43,12 +56,11 @@ export default async function GroupsPage() {
     )
     .all(orgId) as PartyRow[];
 
-  const presentGroups = [...new Set(memberRows.map((m) => m.group_name))];
-  const allGroups = [...new Set([...GROUP_ORDER, ...presentGroups])];
-
-  const groups = allGroups.map((name) => ({
-    group_name: name,
-    members: memberRows.filter((m) => m.group_name === name),
+  const groups = groupRows.map((g) => ({
+    group_name: g.name,
+    label: g.label,
+    description: g.description,
+    members: memberRows.filter((m) => m.group_name === g.name),
   }));
 
   return (

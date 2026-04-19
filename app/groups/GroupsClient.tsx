@@ -14,6 +14,8 @@ interface Member {
 
 interface GroupData {
   group_name: string;
+  label: string;
+  description: string | null;
   members: Member[];
 }
 
@@ -27,24 +29,22 @@ interface Props {
   parties: PartyOption[];
 }
 
-const GROUP_LABELS: Record<string, string> = {
-  board: 'Board',
-  acc: 'ACC Committee',
-  management: 'Management',
-  utility: 'Utility',
-  vendor: 'Vendor',
-};
-
-function GroupSection({ group, parties }: { group: GroupData; parties: PartyOption[] }) {
+function GroupSection({
+  group,
+  parties,
+  defaultShowForm = false,
+}: {
+  group: GroupData;
+  parties: PartyOption[];
+  defaultShowForm?: boolean;
+}) {
   const [expanded, setExpanded] = useState(true);
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(defaultShowForm);
   const [partyId, setPartyId] = useState('');
   const [title, setTitle] = useState('');
   const [startDate, setStartDate] = useState('');
   const [isPending, startTransition] = useTransition();
   const router = useRouter();
-
-  const label = GROUP_LABELS[group.group_name] ?? group.group_name;
 
   async function handleEnd(membershipId: number) {
     await fetch(`/api/group-memberships/${membershipId}`, {
@@ -80,8 +80,13 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
         onClick={() => setExpanded(!expanded)}
         className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 rounded-lg transition-colors"
       >
-        <span className="font-semibold text-gray-900">{label}</span>
-        <span className="text-sm text-gray-500">
+        <div>
+          <span className="font-semibold text-gray-900">{group.label}</span>
+          {group.description && (
+            <span className="ml-3 text-sm text-gray-500">{group.description}</span>
+          )}
+        </div>
+        <span className="text-sm text-gray-500 shrink-0 ml-4">
           {group.members.length} member{group.members.length !== 1 ? 's' : ''}{' '}
           {expanded ? '▲' : '▼'}
         </span>
@@ -195,12 +200,117 @@ function GroupSection({ group, parties }: { group: GroupData; parties: PartyOpti
   );
 }
 
-export default function GroupsClient({ groups, parties }: Props) {
+export default function GroupsClient({ groups: initialGroups, parties }: Props) {
+  const [groups, setGroups] = useState(initialGroups);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newLabel, setNewLabel] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [error, setError] = useState('');
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    setError('');
+    const res = await fetch('/api/groups', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: newName, label: newLabel, description: newDescription }),
+    });
+    if (!res.ok) {
+      const body = await res.json();
+      setError(body.error ?? 'Failed to create group');
+      return;
+    }
+    const { name } = await res.json();
+    setGroups((prev) => [
+      ...prev,
+      { group_name: name, label: newLabel.trim(), description: newDescription.trim() || null, members: [] },
+    ]);
+    setNewName('');
+    setNewLabel('');
+    setNewDescription('');
+    setShowNewForm(false);
+    startTransition(() => router.refresh());
+  }
+
   return (
     <div>
-      {groups.map((group) => (
-        <GroupSection key={group.group_name} group={group} parties={parties} />
+      {groups.map((group, i) => (
+        <GroupSection
+          key={group.group_name}
+          group={group}
+          parties={parties}
+          defaultShowForm={group.members.length === 0 && i === groups.length - 1}
+        />
       ))}
+      <div className="mt-2">
+        {showNewForm ? (
+          <form onSubmit={handleCreate} className="border border-gray-200 rounded-lg p-4 flex flex-col gap-3">
+            <h2 className="font-semibold text-gray-900">New group</h2>
+            {error && <p className="text-sm text-red-600">{error}</p>}
+            <div className="flex flex-wrap gap-3">
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Name (slug)</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g. landscaping"
+                  autoFocus
+                  required
+                  className="border rounded px-2 py-1 text-sm w-44"
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-xs text-gray-500">Display label</label>
+                <input
+                  type="text"
+                  value={newLabel}
+                  onChange={(e) => setNewLabel(e.target.value)}
+                  placeholder="e.g. Landscaping Committee"
+                  required
+                  className="border rounded px-2 py-1 text-sm w-56"
+                />
+              </div>
+              <div className="flex flex-col gap-1 flex-1 min-w-48">
+                <label className="text-xs text-gray-500">Description (optional)</label>
+                <input
+                  type="text"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Brief description of this group's role"
+                  className="border rounded px-2 py-1 text-sm"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={isPending}
+                className="text-sm px-3 py-1 bg-green-700 text-white rounded hover:bg-green-800 disabled:opacity-50 cursor-pointer"
+              >
+                Create group
+              </button>
+              <button
+                type="button"
+                onClick={() => { setShowNewForm(false); setError(''); }}
+                className="text-sm px-3 py-1 border rounded hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        ) : (
+          <button
+            onClick={() => setShowNewForm(true)}
+            className="text-sm text-green-700 hover:text-green-900 font-medium cursor-pointer"
+          >
+            + New group
+          </button>
+        )}
+      </div>
     </div>
   );
 }
