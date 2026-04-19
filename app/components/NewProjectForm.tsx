@@ -210,6 +210,7 @@ export default function NewProjectForm({ lots }: { lots: LotSearchResult[] }) {
                 <option value="major_remodel">Major Remodel</option>
                 <option value="minor_remodel">Minor Remodel</option>
                 <option value="landscaping">Landscaping</option>
+                <option value="notification_only">Notification Only</option>
               </select>
             </CardContent>
           </Card>

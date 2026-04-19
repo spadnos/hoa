@@ -10,7 +10,8 @@ export type ProjectType =
   | 'new_residence'
   | 'minor_remodel'
   | 'major_remodel'
-  | 'landscaping';
+  | 'landscaping'
+  | 'notification_only';
 
 export type ProjectStatus =
   | 'inquiry'

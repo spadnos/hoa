@@ -2,19 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { LotOption } from './page';
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-}
-
-function parseMarkdown(text: string): string {
-  return text
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-    .replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-1 rounded text-sm font-mono">$1</code>')
-    .replace(/\n/g, '<br>');
 }
 
 export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
@@ -204,14 +198,33 @@ export default function SubmitProjectClient({ lots }: { lots: LotOption[] }) {
                 msg.role === 'user' ? 'text-white' : 'bg-gray-100 text-gray-900'
               }`}
               style={msg.role === 'user' ? { backgroundColor: 'var(--hoa-green)' } : undefined}
-              dangerouslySetInnerHTML={{
-                __html:
-                  parseMarkdown(msg.content) ||
-                  (isStreaming && i === messages.length - 1
-                    ? '<span class="opacity-50">…</span>'
-                    : ''),
-              }}
-            />
+            >
+              {msg.content ? (
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    p: ({ children }) => <p className="mb-1 last:mb-0">{children}</p>,
+                    strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                    ul: ({ children }) => <ul className="list-disc pl-4 mb-1 space-y-0.5">{children}</ul>,
+                    ol: ({ children }) => <ol className="list-decimal pl-4 mb-1 space-y-0.5">{children}</ol>,
+                    li: ({ children }) => <li>{children}</li>,
+                    table: ({ children }) => <table className="border-collapse text-xs my-1 w-full">{children}</table>,
+                    th: ({ children }) => <th className="border border-gray-300 px-2 py-1 bg-gray-200 font-medium text-left">{children}</th>,
+                    td: ({ children }) => <td className="border border-gray-300 px-2 py-1">{children}</td>,
+                    code: ({ children }) => <code className="bg-gray-200 px-1 rounded font-mono">{children}</code>,
+                    h1: ({ children }) => <h1 className="font-semibold text-base mb-1">{children}</h1>,
+                    h2: ({ children }) => <h2 className="font-semibold mb-1">{children}</h2>,
+                    h3: ({ children }) => <h3 className="font-medium mb-1">{children}</h3>,
+                  }}
+                >
+                  {msg.content}
+                </ReactMarkdown>
+              ) : (
+                isStreaming && i === messages.length - 1 && (
+                  <span className="opacity-50">…</span>
+                )
+              )}
+            </div>
           </div>
         ))}
 

@@ -27,6 +27,7 @@ const TYPE_LABELS: Record<ProjectType, string> = {
   major_remodel: 'Major Remodel',
   minor_remodel: 'Minor Remodel',
   landscaping: 'Landscaping',
+  notification_only: 'Notification Only',
 };
 
 const MILESTONE_LABELS: Record<string, string> = {

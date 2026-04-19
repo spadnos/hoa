@@ -32,7 +32,7 @@ export const createProjectTool: Tool = {
       },
       type: {
         type: 'string',
-        enum: ['new_residence', 'minor_remodel', 'major_remodel', 'landscaping'],
+        enum: ['new_residence', 'minor_remodel', 'major_remodel', 'landscaping', 'notification_only'],
         description: 'Project type',
       },
       description: {
@@ -97,6 +97,7 @@ const DEFAULT_FEES: Record<ProjectType, Fee[]> = {
   landscaping: [
     { description: 'EMACC Review Fee', amount: 200, due_at: 'preliminary_review', paid: null },
   ],
+  notification_only: [],
 };
 
 function generateId(db: Db): string {

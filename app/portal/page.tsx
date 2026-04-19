@@ -20,6 +20,7 @@ const TYPE_LABELS: Record<string, string> = {
   major_remodel: 'Major Remodel',
   minor_remodel: 'Minor Remodel',
   landscaping: 'Landscaping',
+  notification_only: 'Notification Only',
 };
 
 const ROLE_LABELS: Record<string, string> = {
