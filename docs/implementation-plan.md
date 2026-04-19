@@ -82,7 +82,7 @@ Status values: `null | 'pending' | 'approved' | 'not_required'` (permit: `'issue
 
 ---
 
-### [ ] FR-4: Document Library (Medium)
+### [x] FR-4: Document Library (Medium)
 
 **What:** Association-wide document storage with access tiers (public / members / board). Currently only project-specific documents exist. Reference markdown files in `documents/` have no DB records or UI.
 

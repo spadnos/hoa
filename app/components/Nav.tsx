@@ -10,6 +10,7 @@ const BASE_LINKS = [
   { href: "/acc", label: "ACC" },
   { href: "/directory", label: "Directory" },
   { href: "/lots", label: "Lots" },
+  { href: "/documents", label: "Documents" },
   { href: "/chat", label: "Assistant" },
 ];
 

@@ -177,6 +177,21 @@ export interface Announcement {
   created_at: string;
 }
 
+export interface LibraryDocument {
+  id: number;
+  organization_id: string;
+  title: string;
+  description: string | null;
+  file_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  access_tier: 'public' | 'members' | 'board';
+  category: string | null;
+  uploaded_by_party_id: number | null;
+  uploaded_at: string;
+  updated_at: string;
+}
+
 export interface ChatSession {
   id: string;
   label: string | null;
