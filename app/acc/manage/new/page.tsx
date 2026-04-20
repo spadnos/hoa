@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { getDb, ORG_ID } from '@/src/db';
 import { getSession } from '@/src/auth/session';
 import NewProjectForm from '@/app/components/NewProjectForm';
+import { listApprovalTypes } from '@/src/tools/list-approval-types';
 import type { LotSearchResult } from '@/app/api/lots/route';
 
 export default async function NewProjectPage() {
@@ -30,13 +31,15 @@ export default async function NewProjectPage() {
     ORDER BY l.lot_number, la.address
   `).all(orgId) as LotSearchResult[];
 
+  const approvalTypes = listApprovalTypes(db, orgId);
+
   return (
     <div className="max-w-xl">
       <Link href="/acc/manage" className="text-sm text-gray-500 hover:text-gray-900 mb-6 block">
         ← ACC Management
       </Link>
       <h1 className="text-2xl font-bold text-gray-900 mb-6">New Project</h1>
-      <NewProjectForm lots={lots} />
+      <NewProjectForm lots={lots} approvalTypes={approvalTypes} />
     </div>
   );
 }

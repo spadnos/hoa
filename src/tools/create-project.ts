@@ -6,7 +6,8 @@ import { getOrCreateParty } from './manage-parties';
 export const createProjectTool: Tool = {
   name: 'create_project',
   description:
-    'Create a new HOA project. Records the project in the database and pre-populates standard fees for the project type.',
+    'Create a new HOA project. Records the project in the database and pre-populates standard fees for the project type. ' +
+    'Call list_approval_types to discover which external approvals apply, then pass the relevant name slugs in approval_type_names.',
   input_schema: {
     type: 'object' as const,
     properties: {
@@ -62,6 +63,13 @@ export const createProjectTool: Tool = {
         },
         required: ['name'],
       },
+      approval_type_names: {
+        type: 'array',
+        items: { type: 'string' },
+        description:
+          'Name slugs of external approvals that apply to this project (e.g. ["tctac", "usfs_color"]). ' +
+          'Call list_approval_types first to get valid slugs.',
+      },
     },
     required: ['lot', 'owner', 'address', 'type', 'description'],
   },
@@ -75,6 +83,8 @@ export interface CreateProjectInput {
   description: string;
   designer?: ContactInfo;
   contractor?: ContactInfo;
+  approval_type_names?: string[];
+  approval_type_ids?: number[];
 }
 
 const DEFAULT_FEES: Record<ProjectType, Fee[]> = {
@@ -196,6 +206,24 @@ export async function createProject(
     );
     for (const fee of DEFAULT_FEES[input.type]) {
       insertFee.run(id, orgId, fee.description, fee.amount, fee.due_at);
+    }
+
+    const insertApproval = db.prepare(
+      `INSERT OR IGNORE INTO project_approvals (project_id, organization_id, approval_type_id)
+       VALUES (?, ?, ?)`
+    );
+
+    if (input.approval_type_names?.length) {
+      for (const name of input.approval_type_names) {
+        const at = db.prepare(
+          `SELECT id FROM approval_types WHERE organization_id = ? AND name = ? AND is_active = 1`
+        ).get(orgId, name) as { id: number } | undefined;
+        if (at) insertApproval.run(id, orgId, at.id);
+      }
+    } else if (input.approval_type_ids?.length) {
+      for (const typeId of input.approval_type_ids) {
+        insertApproval.run(id, orgId, typeId);
+      }
     }
 
     return { id };

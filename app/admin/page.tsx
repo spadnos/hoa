@@ -25,6 +25,13 @@ export default async function AdminPage() {
           <h2 className="font-semibold text-gray-900 mb-1">Announcements</h2>
           <p className="text-sm text-gray-500">Create and manage community announcements</p>
         </Link>
+        <Link
+          href="/admin/approval-types"
+          className="block border border-gray-200 rounded-lg p-5 hover:bg-gray-50 transition-colors"
+        >
+          <h2 className="font-semibold text-gray-900 mb-1">Approval Types</h2>
+          <p className="text-sm text-gray-500">Configure external agency approval types for this HOA</p>
+        </Link>
       </div>
     </div>
   );

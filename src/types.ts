@@ -88,7 +88,37 @@ export interface ProjectSummary {
   owner: string;            // derived from owner.name
   type: ProjectType;
   status: ProjectStatus;
+  has_pending_warnings: boolean;
   directory?: string;       // deprecated: no longer populated with SQLite backend
+}
+
+export type ApprovalStatus = 'pending' | 'approved' | 'not_required' | 'issued' | 'rejected';
+
+export interface ApprovalType {
+  id: number;
+  organization_id: string;
+  name: string;
+  label: string;
+  description: string | null;
+  sort_order: number;
+  is_required_by_default: boolean;
+  is_warning_indicator: boolean;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface ProjectApproval {
+  id: number;
+  project_id: string;
+  organization_id: string;
+  approval_type_id: number;
+  approval_type_name: string;
+  approval_type_label: string;
+  is_warning_indicator: boolean;
+  status: ApprovalStatus | null;
+  notes: string | null;
+  updated_at: string;
+  created_at: string;
 }
 
 export interface Condition {

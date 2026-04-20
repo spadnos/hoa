@@ -5,7 +5,9 @@ import { getProject } from '@/src/tools/get-project';
 import { listConditions } from '@/src/tools/list-conditions';
 import { listInspections } from '@/src/tools/list-inspections';
 import { listProjectDocuments } from '@/src/tools/list-project-documents';
+import { listProjectApprovals } from '@/src/tools/list-project-approvals';
 import type { Fee, Condition, Inspection, ProjectType } from '@/src/types';
+import ProjectApprovalsSection from '@/app/components/ProjectApprovalsSection';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import ProjectContactsSection from '@/app/components/ProjectContactsSection';
@@ -230,11 +232,12 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   const [db, session] = [getDb(), await getSession()];
   const orgId = session?.organizationId ?? ORG_ID;
 
-  const [project, conditions, inspections, documents] = await Promise.all([
+  const [project, conditions, inspections, documents, approvals] = await Promise.all([
     getProject({ id }, db, orgId),
     listConditions({ project_id: id }, db, orgId),
     listInspections({ project_id: id }, db, orgId),
     listProjectDocuments({ project_id: id }, db, orgId),
+    listProjectApprovals({ project_id: id }, db, orgId),
   ]);
 
   if (typeof project === 'string') {
@@ -297,6 +300,13 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         <h1 className="text-2xl font-bold text-gray-900">Project {project.id}</h1>
         <StatusBadge status={project.status} />
       </div>
+
+      {approvals.some((a) => a.is_warning_indicator && (a.status === null || a.status === 'pending')) && (
+        <div className="mb-5 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          <span className="text-amber-500 font-bold">⚠</span>
+          One or more external agency approvals are pending for this project.
+        </div>
+      )}
 
       <div className="space-y-5">
         {/* Summary */}
@@ -371,6 +381,22 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             />
           </CardContent>
         </Card>
+
+        {/* External Approvals */}
+        {approvals.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">External Approvals</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProjectApprovalsSection
+                projectId={project.id}
+                initialApprovals={approvals}
+                isAdmin={isAdmin}
+              />
+            </CardContent>
+          </Card>
+        )}
 
         {/* Communications placeholder */}
         <Card>

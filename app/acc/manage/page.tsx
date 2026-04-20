@@ -78,7 +78,14 @@ function ProjectsTable({ byStatus, all }: { byStatus?: Record<string, ProjectSum
 function ProjectRow({ project: p }: { project: ProjectSummary }) {
   return (
     <ProjectTableRow id={p.id}>
-      <td className="py-2 font-mono text-xs text-gray-600">{p.id}</td>
+      <td className="py-2 font-mono text-xs text-gray-600">
+        <span className="inline-flex items-center gap-1.5">
+          {p.id}
+          {p.has_pending_warnings && (
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 shrink-0" title="Pending external approvals" />
+          )}
+        </span>
+      </td>
       <td className="py-2 text-gray-700">{p.lot}</td>
       <td className="py-2 text-gray-900 truncate pr-2">{p.owner}</td>
       <td className="py-2 text-gray-600">{TYPE_LABELS[p.type] ?? p.type}</td>

@@ -29,6 +29,17 @@ import { getMembersTool, getMembers, GetMembersInput } from './get-members';
 import { addMemberTool, addMember, AddMemberInput } from './add-member';
 import { editMemberTool, editMember, EditMemberInput } from './edit-member';
 import { removeMemberTool, removeMember, RemoveMemberInput } from './remove-member';
+import { listApprovalTypesTool, listApprovalTypes } from './list-approval-types';
+import {
+  listProjectApprovalsTool,
+  listProjectApprovals,
+  ListProjectApprovalsInput,
+} from './list-project-approvals';
+import {
+  setProjectApprovalTool,
+  setProjectApproval,
+  SetProjectApprovalInput,
+} from './set-project-approval';
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
 import path from 'path';
 import { getDb } from '../db';
@@ -62,6 +73,9 @@ export function getTools(): Tool[] {
     addMemberTool,
     editMemberTool,
     removeMemberTool,
+    listApprovalTypesTool,
+    listProjectApprovalsTool,
+    setProjectApprovalTool,
   ];
 }
 
@@ -123,6 +137,12 @@ export async function executeTool(
       return editMember(input as unknown as EditMemberInput, db, orgId);
     case 'remove_member':
       return removeMember(input as unknown as RemoveMemberInput, db, orgId);
+    case 'list_approval_types':
+      return listApprovalTypes(db, orgId);
+    case 'list_project_approvals':
+      return listProjectApprovals(input as unknown as ListProjectApprovalsInput, db, orgId);
+    case 'set_project_approval':
+      return setProjectApproval(input as unknown as SetProjectApprovalInput, db, orgId);
     default:
       return `Unknown tool: ${name}`;
   }

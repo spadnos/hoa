@@ -37,11 +37,19 @@ interface SummaryRow {
   owner_name: string | null;
   type: ProjectType;
   status: ProjectStatus;
+  has_pending_warnings: number;
 }
 
 export async function listProjects(input: ListProjectsInput, db: Db, orgId: string): Promise<ProjectSummary[]> {
   let sql = `
-    SELECT p.id, l.lot_number, op.name as owner_name, p.type, p.status
+    SELECT p.id, l.lot_number, op.name as owner_name, p.type, p.status,
+      EXISTS (
+        SELECT 1 FROM project_approvals pa
+        JOIN approval_types at ON at.id = pa.approval_type_id
+        WHERE pa.project_id = p.id
+          AND at.is_warning_indicator = 1
+          AND (pa.status IS NULL OR pa.status = 'pending')
+      ) as has_pending_warnings
     FROM projects p
     JOIN lots l ON l.id = p.lot_id
     LEFT JOIN parties op ON op.id = p.owner_party_id
@@ -71,5 +79,6 @@ export async function listProjects(input: ListProjectsInput, db: Db, orgId: stri
     owner: row.owner_name ?? 'Unknown',
     type: row.type,
     status: row.status,
+    has_pending_warnings: row.has_pending_warnings === 1,
   }));
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { LotSearchResult } from '@/app/api/lots/route';
+import type { ApprovalType } from '@/src/types';
 
 interface Selected {
   lot_number: number;
@@ -16,7 +17,13 @@ interface Selected {
   owner_mailing_address: string;
 }
 
-export default function NewProjectForm({ lots }: { lots: LotSearchResult[] }) {
+export default function NewProjectForm({
+  lots,
+  approvalTypes = [],
+}: {
+  lots: LotSearchResult[];
+  approvalTypes?: ApprovalType[];
+}) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,6 +42,11 @@ export default function NewProjectForm({ lots }: { lots: LotSearchResult[] }) {
 
   // Project fields
   const [type, setType] = useState('new_residence');
+
+  // External approvals — all checked by default
+  const [selectedApprovalIds, setSelectedApprovalIds] = useState<Set<number>>(
+    () => new Set(approvalTypes.map((a) => a.id))
+  );
 
   // Designer (optional)
   const [addDesigner, setAddDesigner] = useState(false);
@@ -126,6 +138,10 @@ export default function NewProjectForm({ lots }: { lots: LotSearchResult[] }) {
         email: contractorEmail || undefined,
         phone: contractorPhone || undefined,
       };
+    }
+
+    if (selectedApprovalIds.size > 0) {
+      body.approval_type_ids = Array.from(selectedApprovalIds);
     }
 
     const res = await fetch('/api/projects', {
@@ -299,6 +315,42 @@ export default function NewProjectForm({ lots }: { lots: LotSearchResult[] }) {
               </CardContent>
             )}
           </Card>
+
+          {approvalTypes.length > 0 && (
+            <Card className="mb-4">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">External Approvals</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <p className="text-xs text-gray-500 mb-3">
+                  Select which external agency approvals apply to this project.
+                </p>
+                {approvalTypes.map((at) => (
+                  <label key={at.id} className="flex items-start gap-2.5 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5 rounded"
+                      checked={selectedApprovalIds.has(at.id)}
+                      onChange={(e) => {
+                        setSelectedApprovalIds((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(at.id);
+                          else next.delete(at.id);
+                          return next;
+                        });
+                      }}
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">{at.label}</span>
+                      {at.description && (
+                        <p className="text-xs text-gray-500">{at.description}</p>
+                      )}
+                    </div>
+                  </label>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="mb-6">
             <CardHeader className="pb-2">
