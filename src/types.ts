@@ -23,10 +23,12 @@ export type ProjectStatus =
   | 'on_hold';
 
 export interface Fee {
+  id: number;
   description: string;
   amount: number;
   due_at: string;
   paid: string | null;
+  refunded: string | null;
 }
 
 export interface ContactInfo {

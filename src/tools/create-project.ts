@@ -87,7 +87,9 @@ export interface CreateProjectInput {
   approval_type_ids?: number[];
 }
 
-const DEFAULT_FEES: Record<ProjectType, Fee[]> = {
+type FeeTemplate = Omit<Fee, 'id' | 'refunded'>;
+
+const DEFAULT_FEES: Record<ProjectType, FeeTemplate[]> = {
   new_residence: [
     { description: 'EMACC Review Fee', amount: 2000, due_at: 'preliminary_review', paid: null },
     { description: 'Compliance Deposit (Construction)', amount: 3500, due_at: 'final_plan_approval', paid: null },

@@ -70,10 +70,12 @@ export function rowToProject(
     owner,
     fees: fees.map(
       (f): Fee => ({
+        id: f.id,
         description: f.description,
         amount: f.amount,
         due_at: f.due_at,
         paid: f.paid_at,
+        refunded: f.refunded_at,
       })
     ),
   };
@@ -130,7 +132,7 @@ export async function getProject(
   if (!row) return `Project ${input.id} not found`;
 
   const fees = db
-    .prepare(`SELECT description, amount, due_at, paid_at FROM fees WHERE project_id = ? ORDER BY id`)
+    .prepare(`SELECT id, description, amount, due_at, paid_at, refunded_at FROM fees WHERE project_id = ? ORDER BY id`)
     .all(input.id) as FeeRow[];
 
   const additionalContacts = db

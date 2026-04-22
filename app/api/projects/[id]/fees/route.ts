@@ -27,6 +27,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     return NextResponse.json({ message: 'Fee marked as paid' });
   }
 
+  if (body.fee_id && body.refunded === true) {
+    const result = db
+      .prepare(
+        `UPDATE fees SET refunded_at = datetime('now')
+         WHERE id = ? AND project_id = ? AND organization_id = ?`
+      )
+      .run(body.fee_id, projectId, orgId);
+    if (result.changes === 0) {
+      return NextResponse.json({ error: 'Fee not found' }, { status: 404 });
+    }
+    return NextResponse.json({ message: 'Fee marked as refunded' });
+  }
+
   if (body.description && body.amount && body.due_at) {
     db.prepare(
       `INSERT INTO fees (project_id, organization_id, description, amount, due_at)

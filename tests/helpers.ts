@@ -5,12 +5,16 @@ import { createDb } from '../src/db';
 import type { Db } from '../src/db';
 import { Project, ProjectType, ProjectStatus, Fee, ContactInfo } from '../src/types';
 
+type FeeInput = Pick<Fee, 'description' | 'amount' | 'due_at' | 'paid'>;
+
 export function makeTestDb(): Db {
   return createDb(':memory:');
 }
 
-export function seedTestProject(db: Db, overrides: Partial<Project> = {}): void {
-  const project: Project = {
+type ProjectOverrides = Omit<Partial<Project>, 'fees'> & { fees?: FeeInput[] };
+
+export function seedTestProject(db: Db, overrides: ProjectOverrides = {}): void {
+  const project = {
     id: '2026-001',
     lot: 42,
     owner: { name: 'Test Owner' } as ContactInfo,
@@ -18,7 +22,7 @@ export function seedTestProject(db: Db, overrides: Partial<Project> = {}): void 
     type: 'new_residence' as ProjectType,
     status: 'preliminary_review' as ProjectStatus,
     submitted: '2026-01-01',
-    fees: [] as Fee[],
+    fees: [] as FeeInput[],
     ...overrides,
   };
 

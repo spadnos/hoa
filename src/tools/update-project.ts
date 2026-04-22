@@ -1,6 +1,8 @@
 import type { Tool } from '@anthropic-ai/sdk/resources/messages';
-import { Project } from '../types';
+import { Project, Fee } from '../types';
 import type { Db } from '../db';
+
+type FeeUpdate = Omit<Fee, 'id' | 'refunded'> & { refunded?: string | null };
 
 export const updateProjectTool: Tool = {
   name: 'update_project',
@@ -27,7 +29,7 @@ export const updateProjectTool: Tool = {
 
 export interface UpdateProjectInput {
   id: string;
-  fields: Partial<Omit<Project, 'id'>>;
+  fields: Partial<Omit<Project, 'id' | 'fees'>> & { fees?: FeeUpdate[] };
 }
 
 export async function updateProject(
@@ -123,11 +125,11 @@ export async function updateProject(
   if (fees) {
     db.prepare(`DELETE FROM fees WHERE project_id = ?`).run(input.id);
     const ins = db.prepare(
-      `INSERT INTO fees (project_id, organization_id, description, amount, due_at, paid_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO fees (project_id, organization_id, description, amount, due_at, paid_at, refunded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     );
     for (const f of fees) {
-      ins.run(input.id, orgId, f.description, f.amount, f.due_at, f.paid ?? null);
+      ins.run(input.id, orgId, f.description, f.amount, f.due_at, f.paid ?? null, f.refunded ?? null);
     }
   }
 

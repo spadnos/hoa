@@ -6,12 +6,13 @@ import { listConditions } from '@/src/tools/list-conditions';
 import { listInspections } from '@/src/tools/list-inspections';
 import { listProjectDocuments } from '@/src/tools/list-project-documents';
 import { listProjectApprovals } from '@/src/tools/list-project-approvals';
-import type { Fee, Condition, Inspection, ProjectType } from '@/src/types';
+import type { Condition, Inspection, ProjectType } from '@/src/types';
 import ProjectApprovalsSection from '@/app/components/ProjectApprovalsSection';
 import { getSession } from '@/src/auth/session';
 import { hasPermission } from '@/src/auth/permissions';
 import ProjectContactsSection from '@/app/components/ProjectContactsSection';
 import ProjectDocumentsSection from '@/app/components/ProjectDocumentsSection';
+import ProjectFeesSection from '@/app/components/ProjectFeesSection';
 import StatusBadge from '@/app/components/StatusBadge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -60,81 +61,6 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
 }
 
 
-function FeesCard({ fees }: { fees: Fee[] }) {
-  const totalOwed = fees.reduce((sum, f) => sum + f.amount, 0);
-  const totalPaid = fees.filter((f) => f.paid).reduce((sum, f) => sum + f.amount, 0);
-  const outstanding = totalOwed - totalPaid;
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Fees</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {fees.length === 0 ? (
-          <p className="text-sm text-gray-400">No fees recorded.</p>
-        ) : (
-          <>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Due At</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fees.map((fee, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="text-sm">{fee.description}</TableCell>
-                    <TableCell className="text-sm text-gray-600 capitalize">
-                      {fee.due_at.replace(/_/g, ' ')}
-                    </TableCell>
-                    <TableCell className="text-right text-sm font-mono">
-                      ${fee.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                    </TableCell>
-                    <TableCell>
-                      {fee.paid ? (
-                        <Badge variant="outline" className="text-green-700 border-green-300 bg-green-50">
-                          Paid {formatDate(fee.paid)}
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-orange-700 border-orange-300 bg-orange-50">
-                          Outstanding
-                        </Badge>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <div className="mt-3 pt-3 border-t border-gray-100 flex justify-end gap-6 text-sm">
-              <span className="text-gray-500">
-                Paid:{' '}
-                <span className="font-semibold text-green-700">
-                  ${totalPaid.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </span>
-              <span className="text-gray-500">
-                Outstanding:{' '}
-                <span className="font-semibold text-orange-700">
-                  ${outstanding.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </span>
-              <span className="text-gray-500">
-                Total:{' '}
-                <span className="font-semibold text-gray-900">
-                  ${totalOwed.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </span>
-              </span>
-            </div>
-          </>
-        )}
-      </CardContent>
-    </Card>
-  );
-}
 
 function ConditionsCard({ conditions }: { conditions: Condition[] }) {
   return (
@@ -359,7 +285,19 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
 
         {/* Fees */}
-        <FeesCard fees={project.fees} />
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Fees</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ProjectFeesSection
+              projectId={project.id}
+              initialFees={project.fees}
+              isAdmin={isAdmin}
+              projectType={project.type}
+            />
+          </CardContent>
+        </Card>
 
         {/* Conditions */}
         <ConditionsCard conditions={conditions} />
